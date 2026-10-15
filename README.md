@@ -108,7 +108,7 @@ SUCCESS: Full Read & Write Verification Passed for all 6 tables!
 ```bash
 PYTHONPATH=. backend/venv/bin/pytest backend/tests/ -v
 ```
-All 16 test cases verify health, database connection, reading from all 6 endpoints, batch lifecycle, Step 4 distribution constraints, and Step 5 Arrhenius biological degradation kinetics.
+All 22 test cases verify health, database connection, reading from all 6 endpoints, batch lifecycle, Step 4 distribution constraints, Step 5 Arrhenius degradation kinetics, Step 6 Dynamic Rerouting, and Step 7 Secondary Market Arbitrage & Food Safety.
 
 ---
 
@@ -150,4 +150,36 @@ $$k(T) = k_{\text{ref}} \cdot \exp\left(-\frac{E_a}{R} \left(\frac{1}{T} - \frac
 $$\alpha(T) = \frac{k(T)}{k_{\text{ref}}}$$
 - **Demonstration Assumptions:** Reactions are modeled under pseudo-first-order degradation kinetics. Crop kinetic parameters ($E_a$, $T_{\text{ref}}$, $k_{\text{ref}}$) are calibrated from USDA Agricultural Handbook 66 and published post-harvest literature.
 - **Thermal Sensitivity:** High activation energy crops (e.g. Mango at $68\text{ kJ/mol}$, Tomato at $58\text{ kJ/mol}$) accelerate decay exponentially ($>7\times$ at $36^\circ\text{C}$), triggering dynamic rerouting flags before cargo write-off occurs.
+
+---
+
+## 9. Step 6 — Dynamic Rerouting Engine (Quality-Driven Diversion)
+
+- `GET /api/shipments/active` — Active consignments in transit with real-time telemetry and destination buyers.
+- `POST /api/rerouting/evaluate/{shipment_id}` — Evaluates whether a live shipment requires diversion under current or simulated thermal stress.
+- `POST /api/rerouting/simulate-spike-and-reroute` — Simulates in-transit cooling breakdown and tests alternative candidate buyer diversion.
+- `POST /api/rerouting/confirm/{shipment_id}` — Persists the autonomous rerouting decision directly to Supabase (`status = 'rerouted'`, updated destination buyer, and audit reason).
+
+---
+
+## 10. Step 7 — Secondary-Market Recovery & Arbitrage Protocol
+
+- `GET /api/secondary/buyers` — Industrial processors (puree, paste, juice, dehydration, starch) registered in the network.
+- `POST /api/secondary/arbitrage-evaluate` — Evaluates real-time economic spread between primary supermarket contracts and secondary processor off-take.
+- `GET /api/secondary/benchmark-scenarios` — Pre-computed comparison benchmarks (Scenario A: Diversion Beneficial vs Scenario B: Maintain Retail).
+
+### Quality Penalty & Food Safety Framework:
+1. **Quality Tiers:**
+   - **Grade A (Prime Fresh):** Display buffer $\ge 48\text{h}$ $\rightarrow$ 0% penalty (100% price paid).
+   - **Grade B (Commercial):** Display buffer $24\text{h} - 47\text{h}$ $\rightarrow$ 25% discount markdown.
+   - **Grade C (Processing Only):** Buffer $4\text{h} - 23\text{h}$ $\rightarrow$ Supermarket rejection / 80% dock; Processors pay full contracted industrial rate with 0% cosmetic penalty.
+   - **Grade D (Biological Spoilage):** Buffer $< 4\text{h}$ $\rightarrow$ FSSAI food-safety violation. Total loss.
+2. **Food Safety Enforcement:** Validates compliance under FSSAI Section 19. If cargo is severely decayed ($< 4.0\text{h}$ life), secondary human food processors strictly reject the consignment; cargo is diverted to bio-digestion or organic compost.
+3. **Continuous Arbitrage Rule:** Recommends secondary processor diversion only when $\text{Net Margin}_{\text{secondary}} > \text{Net Margin}_{\text{primary}}$ and food safety is verified.
+
+### Decision Protocol:
+1. **Destination Viability Check:** Evaluates whether remaining biological shelf life at arrival exceeds buyer quality threshold ($\ge 24\text{h}$ for primary retail, $\ge 4\text{h}$ for secondary processors).
+2. **Multi-Buyer Alternative Ranking:** Discovers closer regional processing hubs and primary stores matching crop demand.
+3. **Economic Margin Arbitrage:** Compares original vs diverted net margin ($(\text{kg} \times \text{price}) - \text{freight}$) and salvages cargo value before biological write-off.
+4. **Database Audit Persistence:** Records full explainable rationale and switches active route in Supabase PostgreSQL.
 

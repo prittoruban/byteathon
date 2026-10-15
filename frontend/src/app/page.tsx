@@ -30,11 +30,14 @@ import {
   Zap,
   Check,
   Flame,
+  Navigation,
 } from "lucide-react";
 import { ShelfLifeBadge } from "@/components/ShelfLifeBadge";
 import { CreateBatchModal } from "@/components/CreateBatchModal";
 import { UpdateBatchModal } from "@/components/UpdateBatchModal";
 import { SpoilageSimulator } from "@/components/SpoilageSimulator";
+import { DynamicReroutingView } from "@/components/DynamicReroutingView";
+import { SecondaryRecoveryView } from "@/components/SecondaryRecoveryView";
 
 interface HealthData {
   status: string;
@@ -206,7 +209,7 @@ export default function Dashboard() {
   const [cropFilter, setCropFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<
-    "distribution" | "spoilage" | "batches" | "buyers" | "storage" | "vehicles"
+    "distribution" | "rerouting" | "secondary" | "spoilage" | "batches" | "buyers" | "storage" | "vehicles"
   >("distribution");
 
   const backendUrl =
@@ -493,6 +496,16 @@ export default function Dashboard() {
                 icon: Route,
               },
               {
+                id: "rerouting",
+                label: "Dynamic Rerouting",
+                icon: Navigation,
+              },
+              {
+                id: "secondary",
+                label: "Secondary Arbitrage",
+                icon: Scale,
+              },
+              {
                 id: "spoilage",
                 label: "Arrhenius Spoilage Engine",
                 icon: Flame,
@@ -566,6 +579,12 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* TAB: DYNAMIC REROUTING (STEP 6) */}
+        {activeTab === "rerouting" && <DynamicReroutingView />}
+
+        {/* TAB: SECONDARY-MARKET RECOVERY (STEP 7) */}
+        {activeTab === "secondary" && <SecondaryRecoveryView />}
 
         {/* TAB: SPOILAGE-RISK ENGINE (STEP 5) */}
         {activeTab === "spoilage" && <SpoilageSimulator />}

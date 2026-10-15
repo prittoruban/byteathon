@@ -27,6 +27,18 @@ from backend.app.spoilage_engine import (
     simulate_temperature_spike,
     get_crop_kinetics,
 )
+from backend.app.rerouting_engine import (
+    evaluate_dynamic_reroute,
+    persist_reroute_to_supabase,
+    RerouteRecommendation,
+    SimulatedRerouteRequest,
+)
+from backend.app.secondary_recovery import (
+    evaluate_secondary_market_arbitrage,
+    determine_quality_grade,
+    evaluate_food_safety_compliance,
+    SecondaryArbitrageResult,
+)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -587,4 +599,338 @@ async def get_live_inventory_spoilage_assessments():
         })
 
     return assessments
+
+
+# ====================================================================
+# DYNAMIC REROUTING ENGINE (STEP 6)
+# ====================================================================
+@app.get(
+    "/api/shipments/active",
+    tags=["Dynamic Rerouting"],
+    response_model=List[Dict[str, Any]],
+)
+async def get_active_shipments():
+    """
+    Retrieves all active consignments (in_transit, scheduled, or rerouted)
+    with joined batch, vehicle, and buyer details.
+    """
+    client = get_supabase_client()
+    res = (
+        client.table("shipments")
+        .select(
+            "*, produce_batches(id, crop_type, quantity_kg, initial_shelf_life_days, remaining_shelf_life_days), "
+            "transport_vehicles(id, vehicle_number, is_refrigerated, current_temp_celsius, current_humidity_pct, current_latitude, current_longitude, cost_per_km), "
+            "destination_buyer:buyers!shipments_destination_buyer_id_fkey(id, name, type, location, latitude, longitude, offered_price_per_kg, demand_crop, demand_kg), "
+            "original_buyer:buyers!shipments_original_buyer_id_fkey(id, name, type, location)"
+        )
+        .in_("status", ["in_transit", "scheduled", "rerouted"])
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return res.data or []
+
+
+@app.post(
+    "/api/rerouting/evaluate/{shipment_id}",
+    tags=["Dynamic Rerouting"],
+    response_model=RerouteRecommendation,
+)
+async def evaluate_shipment_reroute(
+    shipment_id: str,
+    payload: Optional[Dict[str, Any]] = None,
+):
+    """
+    Evaluates whether a specific active shipment requires dynamic rerouting
+    under its current or simulated thermal stress.
+    """
+    client = get_supabase_client()
+    
+    # 1. Fetch shipment with full relational context
+    shipment_res = (
+        client.table("shipments")
+        .select(
+            "*, produce_batches(id, crop_type, quantity_kg, initial_shelf_life_days, remaining_shelf_life_days), "
+            "transport_vehicles(id, vehicle_number, is_refrigerated, current_temp_celsius, current_humidity_pct, current_latitude, current_longitude, cost_per_km), "
+            "destination_buyer:buyers!shipments_destination_buyer_id_fkey(id, name, type, location, latitude, longitude, offered_price_per_kg, demand_crop, demand_kg)"
+        )
+        .eq("id", shipment_id)
+        .execute()
+    )
+
+    if not shipment_res.data:
+        raise HTTPException(status_code=404, detail=f"Shipment {shipment_id} not found")
+
+    shipment = shipment_res.data[0]
+
+    # 2. Fetch all registered candidate buyers
+    buyers_res = client.table("buyers").select("*").execute()
+    candidate_buyers = buyers_res.data or []
+
+    # 3. Telemetry override if provided in request body
+    telemetry_override = None
+    if payload and "current_temp_celsius" in payload:
+        telemetry_override = {
+            "current_temp_celsius": float(payload["current_temp_celsius"]),
+            "current_humidity_pct": float(payload.get("current_humidity_pct", 70.0)),
+            "trigger_reason": payload.get("trigger_reason", "Simulated thermal anomaly"),
+        }
+
+    recommendation = evaluate_dynamic_reroute(
+        shipment=shipment,
+        candidate_buyers=candidate_buyers,
+        telemetry_override=telemetry_override,
+    )
+    return recommendation
+
+
+@app.post(
+    "/api/rerouting/simulate-spike-and-reroute",
+    tags=["Dynamic Rerouting"],
+    response_model=RerouteRecommendation,
+)
+async def simulate_spike_and_reroute(req: SimulatedRerouteRequest):
+    """
+    Simulates a high-temperature breakdown on an active shipment or simulated consignment,
+    demonstrating the complete dynamic rerouting evaluation and alternative comparison.
+    """
+    client = get_supabase_client()
+    buyers_res = client.table("buyers").select("*").execute()
+    candidate_buyers = buyers_res.data or []
+
+    # Build simulated or retrieved shipment
+    if req.shipment_id:
+        shipment_res = (
+            client.table("shipments")
+            .select(
+                "*, produce_batches(id, crop_type, quantity_kg, initial_shelf_life_days, remaining_shelf_life_days), "
+                "transport_vehicles(id, vehicle_number, is_refrigerated, current_temp_celsius, current_humidity_pct, current_latitude, current_longitude, cost_per_km), "
+                "destination_buyer:buyers!shipments_destination_buyer_id_fkey(id, name, type, location, latitude, longitude, offered_price_per_kg, demand_crop, demand_kg)"
+            )
+            .eq("id", req.shipment_id)
+            .execute()
+        )
+        if shipment_res.data:
+            shipment = shipment_res.data[0]
+        else:
+            raise HTTPException(status_code=404, detail=f"Shipment {req.shipment_id} not found")
+    else:
+        # Default scenario: Tomato consignment in Nashik-Mumbai corridor
+        shipment = {
+            "id": "simulated-shipment-001",
+            "allocated_quantity_kg": req.quantity_kg,
+            "produce_batches": {
+                "id": "batch-sim-001",
+                "crop_type": req.crop_type,
+                "initial_shelf_life_days": req.initial_shelf_life_days,
+                "remaining_shelf_life_days": req.remaining_shelf_life_days,
+            },
+            "transport_vehicles": {
+                "id": "veh-sim-001",
+                "vehicle_number": "MH-15-TC-1088",
+                "current_latitude": req.vehicle_lat,
+                "current_longitude": req.vehicle_lon,
+                "cost_per_km": req.cost_per_km,
+            },
+            "destination_buyer": {
+                "id": "48ee5000-503e-4b8d-a7bc-272532eaf258",
+                "name": "FreshMart Hypermarket (Prime Retail)",
+                "type": "primary_retail",
+                "location": "Mumbai Central Hub",
+                "latitude": 19.0760,
+                "longitude": 72.8777,
+                "offered_price_per_kg": 42.0,
+            },
+        }
+
+    telemetry_override = {
+        "current_temp_celsius": req.spiked_temp_celsius,
+        "current_humidity_pct": req.current_humidity_pct,
+        "trigger_reason": f"Refrigeration compressor breakdown: temperature spiked to {req.spiked_temp_celsius}°C",
+    }
+
+    return evaluate_dynamic_reroute(
+        shipment=shipment,
+        candidate_buyers=candidate_buyers,
+        telemetry_override=telemetry_override,
+    )
+
+
+@app.post(
+    "/api/rerouting/confirm/{shipment_id}",
+    tags=["Dynamic Rerouting"],
+    response_model=Dict[str, Any],
+)
+async def confirm_shipment_reroute(
+    shipment_id: str,
+    recommendation: RerouteRecommendation,
+):
+    """
+    Executes and persists the dynamic rerouting decision to Supabase PostgreSQL,
+    updating the shipment status, new destination buyer, and transparent audit reason.
+    """
+    client = get_supabase_client()
+    try:
+        updated_shipment = persist_reroute_to_supabase(
+            client=client,
+            shipment_id=shipment_id,
+            recommendation=recommendation,
+        )
+        return {
+            "status": "success",
+            "message": f"Shipment {shipment_id} successfully rerouted to {recommendation.recommended_destination.buyer_name}",
+            "updated_shipment": updated_shipment,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ====================================================================
+# SECONDARY-MARKET RECOVERY & ARBITRAGE (STEP 7)
+# ====================================================================
+@app.get(
+    "/api/secondary/buyers",
+    tags=["Secondary Market Recovery"],
+    response_model=List[Dict[str, Any]],
+)
+async def get_secondary_processing_buyers():
+    """
+    Returns all registered industrial secondary processors (puree, paste,
+    juice, starch, dehydration) capable of absorbing sub-prime produce.
+    """
+    client = get_supabase_client()
+    res = (
+        client.table("buyers")
+        .select("*")
+        .eq("type", "secondary_processor")
+        .execute()
+    )
+    return res.data or []
+
+
+@app.post(
+    "/api/secondary/arbitrage-evaluate",
+    tags=["Secondary Market Recovery"],
+    response_model=SecondaryArbitrageResult,
+)
+async def evaluate_secondary_arbitrage(payload: Dict[str, Any]):
+    """
+    Evaluates financial and biological arbitrage between a primary supermarket contract
+    and a secondary processing alternative under specific temperature conditions.
+    """
+    client = get_supabase_client()
+    crop_type = payload.get("crop_type", "Tomato")
+    quantity_kg = float(payload.get("quantity_kg", 4000.0))
+    initial_sl_days = float(payload.get("initial_shelf_life_days", 14.0))
+    remaining_sl_days = float(payload.get("remaining_shelf_life_days", 3.0))
+    current_temp = float(payload.get("current_temp_celsius", 35.0))
+    current_humidity = float(payload.get("current_humidity_pct", 70.0))
+    v_lat = float(payload.get("vehicle_lat", 19.98))
+    v_lon = float(payload.get("vehicle_lon", 73.79))
+    cost_per_km = float(payload.get("cost_per_km", 15.0))
+
+    # Retrieve or use specified buyers
+    prim_buyer_id = payload.get("primary_buyer_id")
+    sec_buyer_id = payload.get("secondary_buyer_id")
+
+    buyers_res = client.table("buyers").select("*").execute().data or []
+
+    primary_buyer = None
+    secondary_buyer = None
+
+    if prim_buyer_id:
+        primary_buyer = next((b for b in buyers_res if str(b["id"]) == str(prim_buyer_id)), None)
+    if sec_buyer_id:
+        secondary_buyer = next((b for b in buyers_res if str(b["id"]) == str(sec_buyer_id)), None)
+
+    # Defaults matching crop if not specified
+    if not primary_buyer:
+        primary_buyer = next(
+            (b for b in buyers_res if b["type"] == "primary_retail" and crop_type.lower() in b["demand_crop"].lower()),
+            buyers_res[0] if buyers_res else {},
+        )
+    if not secondary_buyer:
+        secondary_buyer = next(
+            (b for b in buyers_res if b["type"] == "secondary_processor" and crop_type.lower() in b["demand_crop"].lower()),
+            buyers_res[1] if len(buyers_res) > 1 else {},
+        )
+
+    return evaluate_secondary_market_arbitrage(
+        crop_type=crop_type,
+        quantity_kg=quantity_kg,
+        initial_shelf_life_days=initial_sl_days,
+        remaining_shelf_life_days=remaining_sl_days,
+        current_temp_celsius=current_temp,
+        current_humidity_pct=current_humidity,
+        vehicle_lat=v_lat,
+        vehicle_lon=v_lon,
+        primary_buyer=primary_buyer,
+        secondary_buyer=secondary_buyer,
+        cost_per_km=cost_per_km,
+    )
+
+
+@app.get(
+    "/api/secondary/benchmark-scenarios",
+    tags=["Secondary Market Recovery"],
+)
+async def get_arbitrage_benchmark_scenarios():
+    """
+    Returns comparative benchmark scenarios (Scenario A: Diversion Beneficial vs Scenario B: Diversion Not Beneficial)
+    for hackathon demonstration and verification.
+    """
+    client = get_supabase_client()
+    buyers_res = client.table("buyers").select("*").execute().data or []
+
+    prim_tomato = next((b for b in buyers_res if b["name"] == "FreshMart Hypermarket (Prime Retail)"), None) or {
+        "id": "prim-tom",
+        "name": "FreshMart Hypermarket (Prime Retail)",
+        "type": "primary_retail",
+        "location": "Mumbai Central Hub",
+        "latitude": 19.0760,
+        "longitude": 72.8777,
+        "offered_price_per_kg": 42.0,
+    }
+
+    sec_tomato = next((b for b in buyers_res if b["name"] == "Apex Agro Puree & Sauce Corp"), None) or {
+        "id": "sec-tom",
+        "name": "Apex Agro Puree & Sauce Corp",
+        "type": "secondary_processor",
+        "location": "Thane Industrial Zone",
+        "latitude": 19.2183,
+        "longitude": 72.9781,
+        "offered_price_per_kg": 26.5,
+    }
+
+    # Scenario A: Heatwave Breakdown (Diversion is Beneficial)
+    beneficial_scenario = evaluate_secondary_market_arbitrage(
+        crop_type="Tomato",
+        quantity_kg=4000.0,
+        initial_shelf_life_days=14.0,
+        remaining_shelf_life_days=2.0,
+        current_temp_celsius=36.0,
+        current_humidity_pct=70.0,
+        vehicle_lat=19.98,
+        vehicle_lon=73.79,
+        primary_buyer=prim_tomato,
+        secondary_buyer=sec_tomato,
+    )
+
+    # Scenario B: Cold Chain Intact (Diversion is NOT Beneficial)
+    not_beneficial_scenario = evaluate_secondary_market_arbitrage(
+        crop_type="Tomato",
+        quantity_kg=4000.0,
+        initial_shelf_life_days=14.0,
+        remaining_shelf_life_days=9.0,
+        current_temp_celsius=8.0,
+        current_humidity_pct=85.0,
+        vehicle_lat=19.98,
+        vehicle_lon=73.79,
+        primary_buyer=prim_tomato,
+        secondary_buyer=sec_tomato,
+    )
+
+    return {
+        "scenario_a_diversion_beneficial": beneficial_scenario.model_dump(),
+        "scenario_b_diversion_not_beneficial": not_beneficial_scenario.model_dump(),
+    }
 
