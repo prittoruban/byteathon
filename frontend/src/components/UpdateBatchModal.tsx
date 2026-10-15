@@ -106,34 +106,34 @@ export function UpdateBatchModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="update-modal-title"
       onClick={onClose}
     >
       <div
-        className="bg-[#18181A] border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-white"
+        className="bg-white border-t sm:border border-neutral-200/90 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-[#1D1D1F]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* iOS Sheet Grabber Handle */}
-        <div className="w-10 h-1.5 rounded-full bg-neutral-700 mx-auto mb-3 sm:hidden" aria-hidden="true" />
+        {/* Mobile Grabber Handle */}
+        <div className="w-10 h-1.5 rounded-full bg-neutral-300 mx-auto mb-3 sm:hidden" aria-hidden="true" />
 
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
           <div>
             <h2
               id="update-modal-title"
-              className="text-base font-semibold text-white tracking-tight"
+              className="text-base font-bold text-[#1D1D1F] tracking-tight"
             >
               Update Batch: {batch.crop_type} ({batch.quantity_kg.toLocaleString()} kg)
             </h2>
-            <p className="text-xs text-neutral-400 mt-0.5">
+            <p className="text-xs text-[#6E6E73] mt-0.5">
               Adjust inventory status, remaining shelf life, and storage method
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-neutral-400 hover:text-white rounded-full transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            className="p-2 text-[#6E6E73] hover:text-[#1D1D1F] rounded-full transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41]"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" aria-hidden="true" />
@@ -143,7 +143,7 @@ export function UpdateBatchModal({
         {error && (
           <div
             role="alert"
-            className="mt-4 p-3 rounded-xl bg-rose-950/40 border border-rose-900 text-xs text-rose-300 font-medium"
+            className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-[#C62828] font-semibold"
           >
             {error}
           </div>
@@ -153,7 +153,7 @@ export function UpdateBatchModal({
           <div>
             <label
               htmlFor="update-batch-status"
-              className="block text-neutral-300 font-medium mb-1 text-xs"
+              className="block text-[#1D1D1F] font-semibold mb-1 text-xs"
             >
               Consignment Status
             </label>
@@ -161,7 +161,7 @@ export function UpdateBatchModal({
               id="update-batch-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer text-sm"
+              className="w-full px-3 py-2 rounded-xl border border-neutral-300 bg-[#F8F9FA] text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41] cursor-pointer text-sm"
             >
               <option value="harvested">Harvested (Ready at farm)</option>
               <option value="in_storage">In Storage (Buffer facility)</option>
@@ -175,7 +175,7 @@ export function UpdateBatchModal({
           <div>
             <label
               htmlFor="update-batch-shelflife"
-              className="block text-neutral-300 font-medium mb-1 text-xs"
+              className="block text-[#1D1D1F] font-semibold mb-1 text-xs"
             >
               Remaining Shelf Life (days)
             </label>
@@ -188,9 +188,9 @@ export function UpdateBatchModal({
               value={remainingShelfLife}
               onChange={(e) => setRemainingShelfLife(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 text-sm"
+              className="w-full px-3 py-2 rounded-xl border border-neutral-300 bg-[#F8F9FA] text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41] text-sm"
             />
-            <p className="text-xs text-neutral-400 mt-1 font-medium">
+            <p className="text-xs text-[#6E6E73] mt-1 font-medium">
               Initial: {batch.initial_shelf_life_days} days
             </p>
           </div>
@@ -198,7 +198,7 @@ export function UpdateBatchModal({
           <div>
             <label
               htmlFor="update-batch-storage"
-              className="block text-neutral-300 font-medium mb-1 text-xs"
+              className="block text-[#1D1D1F] font-semibold mb-1 text-xs"
             >
               Storage Condition
             </label>
@@ -206,27 +206,27 @@ export function UpdateBatchModal({
               id="update-batch-storage"
               value={storageCondition}
               onChange={(e) => setStorageCondition(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer text-sm"
+              className="w-full px-3 py-2 rounded-xl border border-neutral-300 bg-[#F8F9FA] text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41] cursor-pointer text-sm"
             >
-              <option value="ambient_heap">Ambient Heap</option>
-              <option value="ventilated_shed">Ventilated Shed</option>
-              <option value="cold_storage">Cold Storage</option>
+              <option value="ambient_heap">☀️ Ambient Heap (High Risk)</option>
+              <option value="ventilated_shed">🏠 Ventilated Shed (Medium Risk)</option>
+              <option value="cold_storage">❄️ Cold Storage (Safe Buffer)</option>
             </select>
           </div>
 
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-white/10">
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-neutral-200">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-5 py-2.5 rounded-xl min-h-[44px] text-neutral-400 hover:text-white hover:bg-white/10 font-medium transition-colors cursor-pointer"
+              className="px-5 py-2.5 rounded-xl min-h-[44px] text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#F5F5F7] font-semibold transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl min-h-[44px] bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white font-semibold transition-all cursor-pointer shadow-sm"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl min-h-[44px] bg-[#107C41] hover:bg-[#0D6535] active:scale-[0.98] text-white font-bold transition-all cursor-pointer shadow-sm"
             >
               {loading ? (
                 <>

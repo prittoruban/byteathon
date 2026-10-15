@@ -153,25 +153,25 @@ export function CreateBatchModal({
       onClick={onClose}
     >
       <div
-        className="bg-[#18181A] border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto text-white"
+        className="bg-white border-t sm:border border-neutral-200/90 rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto text-[#1D1D1F]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* iOS Sheet Grabber Handle */}
-        <div className="w-10 h-1.5 rounded-full bg-neutral-700 mx-auto mb-3 sm:hidden" aria-hidden="true" />
+        <div className="w-10 h-1.5 rounded-full bg-neutral-300 mx-auto mb-3 sm:hidden" aria-hidden="true" />
 
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
           <div>
-            <h2 id="modal-title" className="text-base font-semibold text-white tracking-tight">
-              Register Produce Batch
+            <h2 id="modal-title" className="text-base sm:text-lg font-bold text-[#1D1D1F] tracking-tight">
+              फसल दर्ज करें (Register Produce)
             </h2>
-            <p className="text-xs text-neutral-400 mt-0.5">
-              Create new harvest inventory with biological shelf-life tracking
+            <p className="text-xs text-[#6E6E73] mt-0.5">
+              Create new harvest batch with biological shelf-life tracking
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-neutral-400 hover:text-white rounded-full transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            className="p-2 text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#F5F5F7] rounded-full transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41]"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" aria-hidden="true" />
@@ -181,7 +181,7 @@ export function CreateBatchModal({
         {error && (
           <div
             role="alert"
-            className="mt-4 p-3 rounded-xl bg-[#FF453A]/10 border border-[#FF453A]/20 text-xs text-[#FF453A] font-medium"
+            className="mt-4 p-3.5 rounded-xl bg-[#FFEBEE] border border-[#FFCDD2] text-xs text-[#C62828] font-bold"
           >
             {error}
           </div>
@@ -193,15 +193,15 @@ export function CreateBatchModal({
           <div>
             <label
               htmlFor="create-batch-farmer"
-              className="block text-neutral-300 font-medium mb-1 text-xs"
+              className="block text-[#1D1D1F] font-semibold mb-1 text-xs"
             >
-              किसान का नाम (Farmer)
+              किसान का नाम (Farmer Producer)
             </label>
             <select
               id="create-batch-farmer"
               value={farmerId}
               onChange={(e) => setFarmerId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer text-sm"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-[#F8F9FA] text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41] cursor-pointer text-sm"
             >
               {farmers.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -213,7 +213,7 @@ export function CreateBatchModal({
 
           {/* Quick Visual Crop Selection (One-tap for farmers) */}
           <div>
-            <label className="block text-neutral-300 font-semibold mb-2 text-xs">
+            <label className="block text-[#1D1D1F] font-bold mb-2 text-xs">
               फसल चुनें (Pick Your Crop)
             </label>
             <div className="grid grid-cols-4 gap-2">
@@ -229,13 +229,13 @@ export function CreateBatchModal({
                   onClick={() => handleCropChange(item.crop)}
                   className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
                     cropType === item.crop
-                      ? "bg-[#30D158]/20 border-[#30D158] text-white scale-[1.02] shadow-md ring-2 ring-[#30D158]/40"
-                      : "bg-[#242426] border-white/10 text-neutral-300 hover:border-white/25"
+                      ? "bg-[#E8F5E9] border-[#107C41] text-[#107C41] shadow-xs ring-2 ring-[#107C41]/30 font-bold"
+                      : "bg-[#F8F9FA] border-neutral-200 text-[#4B5563] hover:border-neutral-300"
                   }`}
                 >
                   <span className="text-2xl">{item.emoji}</span>
                   <span className="text-xs font-bold">{item.label}</span>
-                  <span className="text-[10px] text-neutral-400">{item.crop}</span>
+                  <span className="text-[10px] text-[#6E6E73]">{item.crop}</span>
                 </button>
               ))}
             </div>
@@ -244,10 +244,10 @@ export function CreateBatchModal({
           {/* Quick Quantity Presets */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-neutral-300 font-semibold text-xs">
+              <label className="block text-[#1D1D1F] font-bold text-xs">
                 कुल वजन (Total Weight)
               </label>
-              <span className="text-xs text-[#30D158] font-bold tabular-nums">
+              <span className="text-xs text-[#107C41] font-bold tabular-nums">
                 {Number(quantityKg || 0).toLocaleString()} kg
               </span>
             </div>
@@ -264,8 +264,8 @@ export function CreateBatchModal({
                   onClick={() => setQuantityKg(preset.kg)}
                   className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     quantityKg === preset.kg
-                      ? "bg-white text-black border-white"
-                      : "bg-[#242426] text-neutral-300 border-white/10 hover:border-white/20"
+                      ? "bg-[#107C41] text-white border-[#107C41] shadow-xs"
+                      : "bg-[#F8F9FA] text-[#4B5563] border-neutral-200 hover:bg-neutral-100"
                   }`}
                 >
                   {preset.label}
@@ -282,7 +282,7 @@ export function CreateBatchModal({
               onChange={(e) => setQuantityKg(e.target.value)}
               placeholder="या खुद वजन लिखें (in kg)"
               required
-              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 text-sm"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-[#F8F9FA] text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41] text-sm"
             />
           </div>
 
@@ -291,9 +291,9 @@ export function CreateBatchModal({
             <div>
               <label
                 htmlFor="create-batch-date"
-                className="block text-neutral-300 font-medium mb-1 text-xs"
+                className="block text-[#1D1D1F] font-semibold mb-1 text-xs"
               >
-                Harvest Date
+                कटाई की तारीख (Harvest Date)
               </label>
               <input
                 id="create-batch-date"
@@ -301,15 +301,15 @@ export function CreateBatchModal({
                 value={harvestDate}
                 onChange={(e) => setHarvestDate(e.target.value)}
                 required
-                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-[#F8F9FA] text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41] text-xs sm:text-sm"
               />
             </div>
             <div>
               <label
                 htmlFor="create-batch-shelflife"
-                className="block text-neutral-300 font-medium mb-1 text-xs"
+                className="block text-[#1D1D1F] font-semibold mb-1 text-xs"
               >
-                Initial Shelf Life (days)
+                जीवनकाल (Shelf Life Days)
               </label>
               <input
                 id="create-batch-shelflife"
@@ -319,7 +319,7 @@ export function CreateBatchModal({
                 value={initialShelfLifeDays}
                 onChange={(e) => setInitialShelfLifeDays(e.target.value)}
                 required
-                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-[#F8F9FA] text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41] text-xs sm:text-sm"
               />
             </div>
           </div>
@@ -328,52 +328,52 @@ export function CreateBatchModal({
           <div>
             <label
               htmlFor="create-batch-storage"
-              className="block text-neutral-300 font-medium mb-1 text-xs"
+              className="block text-[#1D1D1F] font-semibold mb-1 text-xs"
             >
-              Farm Storage Condition (FEFO Matrix)
+              रखने का स्थान (Storage Environment)
             </label>
             <select
               id="create-batch-storage"
               value={storageCondition}
               onChange={(e) => setStorageCondition(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-[#F8F9FA] text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41] cursor-pointer text-xs sm:text-sm"
             >
               <option value="ambient_heap">
-                Ambient Heap Storage (High Decay Risk: +18.5/day)
+                ☀️ खुले खेत में / ढेर (Ambient Heap - High Risk)
               </option>
               <option value="ventilated_shed">
-                Ventilated Shaded Shed (Medium Decay Risk: +8.0/day)
+                🏠 छायादार शेड में (Ventilated Shed - Medium Risk)
               </option>
               <option value="cold_storage">
-                Farm Pre-Cold Room (Low Decay Risk: +2.0/day)
+                ❄️ कोल्ड स्टोरेज में (Cold Room - Safe)
               </option>
             </select>
           </div>
 
           {/* Action buttons */}
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-white/10">
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-neutral-200">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-5 py-2.5 rounded-xl min-h-[44px] text-neutral-400 hover:text-white hover:bg-white/10 font-medium transition-colors cursor-pointer"
+              className="px-5 py-2.5 rounded-xl min-h-[44px] text-[#6E6E73] hover:text-[#1D1D1F] hover:bg-[#F5F5F7] font-semibold transition-colors cursor-pointer"
             >
-              Cancel
+              रद्द करें (Cancel)
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl min-h-[44px] bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-semibold transition-all cursor-pointer shadow-sm"
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl min-h-[44px] bg-[#107C41] hover:bg-[#0D6535] active:scale-[0.98] text-white font-bold transition-all cursor-pointer shadow-sm"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Registering...</span>
+                  <span>दर्ज हो रहा है...</span>
                 </>
               ) : (
                 <>
                   <Plus className="w-4 h-4 stroke-[2.5]" />
-                  <span>Register Batch</span>
+                  <span>फसल जोड़ें (Save Produce)</span>
                 </>
               )}
             </button>

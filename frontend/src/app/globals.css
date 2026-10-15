@@ -1,49 +1,47 @@
 @import "tailwindcss";
 
 :root {
-  /* Apple Pro System Palette (Dedicated Dark Appearance) */
-  --ios-system-background: #000000;
-  --ios-secondary-background: #161618;
-  --ios-tertiary-background: #242426;
-  --ios-grouped-background: #000000;
-  --ios-secondary-grouped-background: #161618;
+  /* Deck-DNA Apple Light System Palette */
+  --ios-system-background: #FBFBFD;
+  --ios-secondary-background: #FFFFFF;
+  --ios-tertiary-background: #F5F5F7;
+  --ios-grouped-background: #F5F5F7;
+  --ios-secondary-grouped-background: #FFFFFF;
 
-  --ios-label-primary: #FFFFFF;
-  --ios-label-secondary: rgba(235, 235, 245, 0.65);
-  --ios-label-tertiary: rgba(235, 235, 245, 0.35);
-  --ios-separator: rgba(255, 255, 255, 0.08);
-  --ios-separator-opaque: #2C2C2E;
+  --ios-label-primary: #1D1D1F;
+  --ios-label-secondary: #6E6E73;
+  --ios-label-tertiary: #86868B;
+  --ios-separator: rgba(0, 0, 0, 0.08);
+  --ios-separator-opaque: #E5E5EA;
 
-  /* Apple HIG Accent Colors */
-  --ios-green: #30D158;
-  --ios-green-tint: rgba(48, 209, 88, 0.16);
-  --ios-blue: #0A84FF;
-  --ios-blue-tint: rgba(10, 132, 255, 0.16);
-  --ios-orange: #FF9F0A;
-  --ios-orange-tint: rgba(255, 159, 10, 0.16);
-  --ios-red: #FF453A;
-  --ios-red-tint: rgba(255, 69, 58, 0.16);
-  --ios-indigo: #5E5CE6;
-  --ios-yellow: #FFD60A;
+  /* Deck-DNA Semantic Accent Colors for Light Theme */
+  --ios-green: #107C41;
+  --ios-green-tint: rgba(16, 124, 65, 0.1);
+  --ios-blue: #0071E3;
+  --ios-blue-tint: rgba(0, 113, 227, 0.1);
+  --ios-orange: #B76E00;
+  --ios-orange-tint: rgba(183, 110, 0, 0.1);
+  --ios-red: #C62828;
+  --ios-red-tint: rgba(198, 40, 40, 0.1);
 
-  --color-primary: #30D158;
-  --color-on-primary: #000000;
-  --color-background: #000000;
-  --color-foreground: #FFFFFF;
-  --color-card: #161618;
-  --color-card-foreground: #FFFFFF;
-  --color-muted: #242426;
-  --color-muted-foreground: rgba(235, 235, 245, 0.65);
-  --color-border: rgba(255, 255, 255, 0.08);
+  --color-primary: #107C41;
+  --color-on-primary: #FFFFFF;
+  --color-background: #FBFBFD;
+  --color-foreground: #1D1D1F;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #1D1D1F;
+  --color-muted: #F5F5F7;
+  --color-muted-foreground: #6E6E73;
+  --color-border: rgba(0, 0, 0, 0.08);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.8);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08);
 }
 
 body {
-  background-color: #000000;
-  color: #FFFFFF;
+  background-color: #FBFBFD;
+  color: #1D1D1F;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", var(--font-fira-sans), system-ui, sans-serif;
   margin: 0;
   padding: 0;
@@ -56,76 +54,46 @@ code, pre, .font-mono {
   font-family: "SF Mono", var(--font-fira-code), Menlo, Monaco, Consolas, monospace;
 }
 
-/* Apple HIG: Liquid Glass & Functional Material Surface */
+/* Apple HIG: Liquid Glass & Functional Material Surface (Light) */
 .ios-glass-bar {
-  background-color: rgba(18, 18, 20, 0.85);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid var(--ios-separator);
+  background-color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-/* Apple Inset Grouped Card */
+/* Deck-DNA Clean Elevated Card */
 .ios-card {
-  background-color: var(--color-card);
+  background-color: #FFFFFF;
   border-radius: 1.25rem; /* 20px continuous squircle */
-  border: 1px solid var(--ios-separator);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Minimum Accessible Touch Target (iOS HIG 44x44pt) */
 .ios-touch-target {
-  min-height: 44px;
-  min-width: 44px;
+  min-height: 48px;
+  min-width: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Apple HIG: Full Keyboard Access & Focus Rings */
+/* Accessible Focus Ring */
 :focus-visible {
-  outline: 2px solid #007AFF !important;
-  outline-offset: 2px !important;
-  border-radius: 8px;
+  outline: 2px solid #107C41;
+  outline-offset: 2px;
 }
 
-/* Apple HIG: Reduced Motion Preferences (accessibility.md & motion.md) */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+/* Print optimizations */
+@media print {
+  body {
+    background-color: #FFFFFF;
+    color: #000000;
   }
-}
-
-/* Apple HIG: Increase Contrast Mode Adaptation */
-@media (prefers-contrast: more) {
-  :root {
-    --ios-separator: rgba(0, 0, 0, 0.65);
+  .ios-glass-bar {
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #CCCCCC;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --ios-separator: rgba(255, 255, 255, 0.65);
-      --ios-secondary-background: #141416;
-    }
-  }
-  .ios-card, .ios-glass-bar {
-    border-width: 2px !important;
-  }
-}
-
-/* Screen reader only utility */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
 }

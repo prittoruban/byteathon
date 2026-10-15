@@ -28,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${firaSans.variable} ${firaCode.variable} dark h-full antialiased bg-black text-white`}>
-      <body className="min-h-full flex flex-col bg-black text-white">{children}</body>
+    <html lang="en" className={`${firaSans.variable} ${firaCode.variable} h-full antialiased bg-[#FBFBFD] text-[#1D1D1F]`}>
+      <body className="min-h-full flex flex-col bg-[#FBFBFD] text-[#1D1D1F]">{children}</body>
     </html>
   );
 }

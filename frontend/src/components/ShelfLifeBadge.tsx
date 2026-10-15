@@ -22,25 +22,25 @@ export function ShelfLifeBadge({
 
   const colorConfig = isCritical
     ? {
-        bg: "bg-[#FF453A]/10",
-        border: "border-[#FF453A]/25",
-        text: "text-[#FF453A]",
-        bar: "bg-[#FF453A]",
+        bg: "bg-[#FFEBEE]",
+        border: "border-[#FFCDD2]",
+        text: "text-[#C62828]",
+        bar: "bg-[#C62828]",
         icon: AlertTriangle,
       }
     : isWarning
     ? {
-        bg: "bg-[#FF9F0A]/10",
-        border: "border-[#FF9F0A]/25",
-        text: "text-[#FF9F0A]",
-        bar: "bg-[#FF9F0A]",
+        bg: "bg-[#FFF4E5]",
+        border: "border-[#FFE0B2]",
+        text: "text-[#B76E00]",
+        bar: "bg-[#B76E00]",
         icon: Clock,
       }
     : {
-        bg: "bg-[#30D158]/10",
-        border: "border-[#30D158]/25",
-        text: "text-[#30D158]",
-        bar: "bg-[#30D158]",
+        bg: "bg-[#E8F5E9]",
+        border: "border-[#C8E6C9]",
+        text: "text-[#107C41]",
+        bar: "bg-[#107C41]",
         icon: CheckCircle,
       };
 
@@ -50,18 +50,18 @@ export function ShelfLifeBadge({
     <div className="w-full space-y-1.5">
       <div className="flex items-center justify-between text-xs">
         <span
-          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-medium tabular-nums ${colorConfig.bg} ${colorConfig.border} ${colorConfig.text}`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-semibold tabular-nums ${colorConfig.bg} ${colorConfig.border} ${colorConfig.text}`}
         >
-          <Icon className="w-3 h-3 stroke-[2]" />
+          <Icon className="w-3 h-3 stroke-[2.5]" />
           <span>{remainingDays} days left</span>
         </span>
-        <span className="text-neutral-400 text-[11px] tabular-nums font-medium">
+        <span className="text-[#6E6E73] text-[11px] tabular-nums font-medium">
           {percentage}% viable
         </span>
       </div>
       {/* Progress track */}
       <div
-        className="w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden"
+        className="w-full h-1.5 rounded-full bg-[#E5E5EA] overflow-hidden"
         role="progressbar"
         aria-valuenow={percentage}
         aria-valuemin={0}

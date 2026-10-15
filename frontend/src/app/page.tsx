@@ -2,36 +2,42 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Route,
-  Navigation,
-  Scale,
-  Flame,
-  Warehouse,
+  Activity,
+  ShieldCheck,
   ThermometerSnowflake,
   Truck,
+  Warehouse,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  ExternalLink,
+  Cpu,
+  Layers,
+  Database,
+  ArrowRight,
+  TrendingUp,
+  Clock,
+  Plus,
+  Edit2,
+  Filter,
+  DollarSign,
   AlertTriangle,
-  MapPin,
+  Scale,
+  Thermometer,
+  Route,
+  Zap,
+  Check,
+  Flame,
+  Navigation,
 } from "lucide-react";
-import { DashboardHeader } from "@/components/ui/DashboardHeader";
-import { TabBar } from "@/components/ui/TabBar";
-import { KPICard } from "@/components/ui/KPICard";
-import { DataCard, DataCardHeader } from "@/components/ui/DataCard";
-import { BatchCard } from "@/components/BatchCard";
-import { BuyerCard } from "@/components/BuyerCard";
-import { StorageCard } from "@/components/StorageCard";
-import { VehicleCard } from "@/components/VehicleCard";
-import {
-  DistributionRecommendationCard,
-  UnallocatedItem,
-  UnfulfilledItem,
-} from "@/components/DistributionRecommendationCard";
+import { ShelfLifeBadge } from "@/components/ShelfLifeBadge";
 import { CreateBatchModal } from "@/components/CreateBatchModal";
 import { UpdateBatchModal } from "@/components/UpdateBatchModal";
 import { SpoilageSimulator } from "@/components/SpoilageSimulator";
 import { DynamicReroutingView } from "@/components/DynamicReroutingView";
 import { SecondaryRecoveryView } from "@/components/SecondaryRecoveryView";
 import { IntegratedMissionControl } from "@/components/IntegratedMissionControl";
-import { LogisticsMapView } from "@/components/LogisticsMapView";
+import { FarmerView } from "@/components/FarmerView";
 
 interface HealthData {
   status: string;
@@ -203,30 +209,39 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
 ];
 
 export default function Dashboard() {
-  const [health, setHealth] = useState<HealthData | null>(null);
+  const [, setHealth] = useState<HealthData | null>(null);
   const [summary, setSummary] = useState<InventorySummary | null>(null);
   const [batches, setBatches] = useState<ProduceBatchItem[]>([]);
-  const [buyers, setBuyers] = useState<BuyerItem[]>([]);
+  const [, setBuyers] = useState<BuyerItem[]>([]);
   const [storages, setStorages] = useState<StorageFacilityItem[]>([]);
   const [vehicles, setVehicles] = useState<TransportVehicleItem[]>([]);
   const [distributionPlan, setDistributionPlan] = useState<DistributionPlan | null>(null);
   const [workflowData, setWorkflowData] = useState<any | null>(null);
 
   const [loading, setLoading] = useState<boolean>(true);
+  const [optimizing, setOptimizing] = useState<boolean>(false);
   const [latency, setLatency] = useState<number | null>(null);
+  const [lastChecked, setLastChecked] = useState<string>("");
 
   const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
   const [selectedBatchForEdit, setSelectedBatchForEdit] =
     useState<ProduceBatchItem | null>(null);
 
+  // Filters & Tabs
   const [cropFilter, setCropFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "distribution" | "rerouting" | "secondary" | "spoilage" | "batches" | "buyers" | "storage" | "vehicles"
+  >("overview");
+
+  // View Mode: Defaults to ultra-simple, voice-enabled Farmer View for rural Indian farmers
+  const [viewMode, setViewMode] = useState<"farmer" | "manager">("farmer");
 
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
   const fetchAllData = useCallback(async () => {
+    setLoading(true);
     const start = performance.now();
     try {
       const [
@@ -249,6 +264,7 @@ export default function Dashboard() {
 
       const end = performance.now();
       setLatency(Math.round(end - start));
+      setLastChecked(new Date().toLocaleTimeString());
 
       if (healthRes.ok) setHealth(await healthRes.json());
       if (summaryRes.ok) setSummary(await summaryRes.json());
@@ -285,375 +301,992 @@ export default function Dashboard() {
     return matchesCrop && matchesStatus;
   });
 
-  const tabsWithCounts = TABS.map((t) => {
-    let label = t.label;
-    if (t.id === "distribution") {
-      label = `Distribution Engine (${distributionPlan?.recommendations.length ?? 0})`;
-    } else if (t.id === "batches") {
-      label = `Produce Batches (${batches.length})`;
-    } else if (t.id === "buyers") {
-      label = `Buyer Demand (${buyers.length})`;
-    } else if (t.id === "storage") {
-      label = `Cold Storage (${storages.length})`;
-    } else if (t.id === "vehicles") {
-      label = `Vehicle Fleet (${vehicles.length})`;
+  const tabsConfig = [
+    {
+      id: "overview",
+      label: "Mission Control (Overview)",
+      icon: Activity,
+    },
+    {
+      id: "distribution",
+      label: `Distribution Engine (${distributionPlan?.recommendations.length ?? 0})`,
+      icon: Route,
+    },
+    {
+      id: "rerouting",
+      label: "Dynamic Rerouting",
+      icon: Navigation,
+    },
+    {
+      id: "secondary",
+      label: "Secondary Arbitrage",
+      icon: Scale,
+    },
+    {
+      id: "spoilage",
+      label: "Arrhenius Spoilage Engine",
+      icon: Flame,
+    },
+    {
+      id: "batches",
+      label: `Produce Batches (${batches.length})`,
+      icon: Layers,
+    },
+    {
+      id: "buyers",
+      label: `Buyer Demand (${buyers.length})`,
+      icon: Warehouse,
+    },
+    {
+      id: "storage",
+      label: `Cold Storage (${storages.length})`,
+      icon: ThermometerSnowflake,
+    },
+    {
+      id: "vehicles",
+      label: `Vehicle Fleet (${vehicles.length})`,
+      icon: Truck,
+    },
+  ] as const;
+
+  const handleTabKeyDown = (e: React.KeyboardEvent, index: number) => {
+    const total = tabsConfig.length;
+    let nextIndex = index;
+    if (e.key === "ArrowRight") {
+      nextIndex = (index + 1) % total;
+    } else if (e.key === "ArrowLeft") {
+      nextIndex = (index - 1 + total) % total;
+    } else if (e.key === "Home") {
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      nextIndex = total - 1;
+    } else {
+      return;
     }
-    return { ...t, label };
-  });
+    e.preventDefault();
+    const nextTab = tabsConfig[nextIndex].id;
+    setActiveTab(nextTab as typeof activeTab);
+    const nextElem = document.getElementById(`tab-${nextTab}`);
+    nextElem?.focus();
+  };
 
   return (
-    <div className="min-h-screen bg-[#F0FDF4] text-[#14532D]">
-      {/* Header */}
-      <DashboardHeader
-        onRefresh={handleRefresh}
-        onRegisterBatch={() => setCreateModalOpen(true)}
-        systemStatus={{ status: health?.status ?? null, latency, loading }}
-      />
-
-      <div className="border-t border-[#BBF7D0]/60 bg-white/40 backdrop-blur-sm supports-[backdrop-filter]:bg-white/20">
-        <TabBar
-          tabs={tabsWithCounts as never}
-          activeTab={activeTab}
-          onTabChange={(id) => setActiveTab(id as TabId)}
-        />
-      </div>
-
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Top KPI Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <KPICard
-            title="Active Produce"
-            value={summary ? `${(summary.total_produce_kg / 1000).toFixed(1)}k` : "--"}
-            unit="kg total"
-            icon={Truck}
-            subtitle={`${summary?.active_batches_count ?? 0} batches logged`}
-          />
-          <KPICard
-            title="Avg Shelf Life"
-            value={summary ? `${summary.avg_remaining_shelf_life_days}d` : "--"}
-            unit="average"
-            trend={{
-              label: "critical (<3 days)",
-              value: `${summary?.critical_batches_count ?? 0}`,
-              positive: false,
-            }}
-          />
-          <KPICard
-            title="Buyer Demand"
-            value={summary ? `${(summary.buyer_demand.total_demand_kg / 1000).toFixed(1)}k` : "--"}
-            unit="kg demand"
-            icon={Warehouse}
-            subtitle={`${(summary?.buyer_demand.primary_demand_kg ?? 0) / 1000}k retail / ${(summary?.buyer_demand.secondary_demand_kg ?? 0) / 1000}k puree`}
-          />
-          <KPICard
-            title="Cold Storage"
-            value={summary ? `${summary.storage.utilization_pct}%` : "--"}
-            unit="utilized"
-            icon={ThermometerSnowflake}
-            subtitle={`${(summary?.storage.available_capacity_kg ?? 0) / 1000}k kg available`}
-          />
-          <KPICard
-            title="Vehicle Fleet"
-            value={summary ? `${(summary.vehicles.total_payload_kg / 1000).toFixed(1)}k` : "--"}
-            unit="kg payload"
-            icon={Truck}
-            subtitle={`${summary?.vehicles.refrigerated_count} cold / ${summary?.vehicles.ambient_count} ambient`}
-          />
-        </section>
-
-        {/* TAB: MISSION CONTROL OVERVIEW */}
-        {activeTab === "overview" && (
-          <IntegratedMissionControl
-            onNavigateToTab={(tab) => setActiveTab(tab as TabId)}
-          />
-        )}
-
-        {/* TAB: DYNAMIC REROUTING */}
-        {activeTab === "rerouting" && <DynamicReroutingView />}
-
-        {/* TAB: SECONDARY-MARKET RECOVERY */}
-        {activeTab === "secondary" && <SecondaryRecoveryView />}
-
-        {/* TAB: SPOILAGE-RISK ENGINE */}
-        {activeTab === "spoilage" && <SpoilageSimulator />}
-
-        {/* TAB: DISTRIBUTION ENGINE */}
-        {activeTab === "distribution" && (
-          <DataCard padding="lg" hover={false}>
-            {distributionPlan && (
-              <>
-                <DataCardHeader
-                  title="FEFO-Optimized Allocation Plan"
-                  description="Multi-echelon allocation and transportation economics prioritized by basal decay rate and maximum net margin."
-                  icon={Route}
-                  badge={
-                    <div className="flex gap-2">
-                      <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0]">
-                        Demand Limits Respected
-                      </span>
-                      <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0]">
-                        Vehicle Payload Checked
-                      </span>
-                      <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0]">
-                        Shelf Life Safe
-                      </span>
-                    </div>
-                  }
-                />
-
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 pt-4 text-xs font-mono border-t border-[#BBF7D0]/50">
-                  <div className="text-center">
-                    <div className="text-[#9CA3AF] text-[10px]">Allocated Volume</div>
-                    <div className="text-lg font-extrabold font-mono text-[#15803D] mt-0.5">
-                      {distributionPlan.total_allocated_kg.toLocaleString()} kg
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[#9CA3AF] text-[10px]">Unallocated Volume</div>
-                    <div className="text-lg font-extrabold font-mono text-[#D97706] mt-0.5">
-                      {distributionPlan.total_unallocated_kg.toLocaleString()} kg
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[#9CA3AF] text-[10px]">Expected Gross Revenue</div>
-                    <div className="text-lg font-extrabold font-mono text-[#14532D] mt-0.5">
-                      ₹{distributionPlan.total_expected_revenue.toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[#9CA3AF] text-[10px]">Transport Cost</div>
-                    <div className="text-lg font-extrabold font-mono text-[#DC2626] mt-0.5">
-                      ₹{distributionPlan.total_transport_cost.toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[#9CA3AF] text-[10px]">Net Economic Yield</div>
-                    <div className="text-lg font-extrabold font-mono text-[#15803D] mt-0.5">
-                      ₹{distributionPlan.total_net_margin.toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-[#14532D] font-mono flex items-center gap-2">
-                  <Route className="w-4 h-4 text-[#15803D]" />
-                  Recommended Produce Allocations (
-                  {distributionPlan?.recommendations.length ?? 0})
-                </h3>
-                <span className="text-xs font-mono text-[#6B7280]">
-                  Prioritized by basal decay rate & maximum net margin
+    <div className="min-h-screen bg-black text-white selection:bg-white/20 selection:text-white">
+      {/* Proper Apple HIG Navigation Bar (Sticky with Liquid Glass material) */}
+      <header className="sticky top-0 z-40 ios-glass-bar shadow-xs">
+        {/* Top Brand & Actions Bar */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          {/* Brand Identity */}
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2.5">
+                <span className="font-semibold text-lg tracking-tight text-white">
+                  HARVEST ZERO
+                </span>
+                <span
+                  className={`text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${viewMode === "farmer"
+                      ? "bg-[#30D158]/15 text-[#30D158] border-[#30D158]/25"
+                      : "text-neutral-400 border-white/[0.1]"
+                    }`}
+                >
+                  {viewMode === "farmer"
+                    ? "किसान साथी (Farmer View)"
+                    : "Operations Control"}
                 </span>
               </div>
+              <p className="text-xs text-neutral-400 hidden sm:block">
+                {viewMode === "farmer"
+                  ? "सरल फसल सुरक्षा और सही दाम साथी"
+                  : "Post-Harvest Loss Prevention and Cold-Chain Logistics"}
+              </p>
+            </div>
+          </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {distributionPlan?.recommendations.map((rec) => (
-                  <DistributionRecommendationCard
-                    key={rec.allocation_id}
-                    rec={rec}
+          {/* Quick Actions & System Status */}
+          <div className="flex items-center gap-2.5">
+            {/* View Mode Switcher */}
+            {viewMode === "farmer" ? (
+              <button
+                onClick={() => setViewMode("manager")}
+                className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold text-neutral-300 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] transition-all cursor-pointer"
+                title="Switch to Logistics Manager View"
+              >
+                <span>⚙️ ऑपरेशन्स (Manager View)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setViewMode("farmer")}
+                className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-[#30D158] hover:bg-[#28b84d] transition-all cursor-pointer shadow-sm"
+                title="Switch to Farmer View"
+              >
+                <span>🌾 किसान साथी (Farmer View)</span>
+              </button>
+            )}
+
+            {/* Quick Register Produce Action */}
+            <button
+              onClick={() => setCreateModalOpen(true)}
+              className="inline-flex items-center gap-2 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span className="hidden sm:inline">
+                {viewMode === "farmer" ? "नई फसल जोड़ें" : "Register Batch"}
+              </span>
+              <span className="sm:hidden">+</span>
+            </button>
+
+            {/* Refresh Button */}
+            <button
+              onClick={fetchAllData}
+              disabled={loading}
+              className="p-2 text-neutral-400 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              title="Refresh inventory data"
+              aria-label="Refresh inventory data"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-400" : ""
+                  }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Sub-Navigation: iOS Segmented Control Tab Bar ONLY in Manager Mode */}
+        {viewMode === "manager" && (
+          <div className="border-t border-white/[0.08] bg-black/40">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto flex items-center justify-between gap-4 scrollbar-none">
+              <nav
+                role="tablist"
+                aria-label="Platform Navigation"
+                className="flex items-center gap-1 shrink-0"
+              >
+                {tabsConfig.map((tab, idx) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      id={`tab-${tab.id}`}
+                      role="tab"
+                      aria-selected={isActive}
+                      aria-controls={`panel-${tab.id}`}
+                      tabIndex={isActive ? 0 : -1}
+                      onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                      onKeyDown={(e) => handleTabKeyDown(e, idx)}
+                      className={`inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 shrink-0 ${isActive
+                          ? "bg-[#242426] text-white shadow-xs font-semibold border border-white/[0.12]"
+                          : "text-neutral-400 hover:text-white hover:bg-white/[0.06]"
+                        }`}
+                    >
+                      <Icon
+                        className="w-3.5 h-3.5 stroke-[2]"
+                        aria-hidden="true"
+                      />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* Contextual Action Button */}
+              {activeTab === "distribution" && (
+                <button
+                  onClick={runDistributionOptimization}
+                  disabled={optimizing}
+                  className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer shrink-0"
+                >
+                  <Zap
+                    className={`w-3.5 h-3.5 ${optimizing ? "animate-spin text-amber-300" : ""
+                      }`}
                   />
-                ))}
-                {distributionPlan?.recommendations.length === 0 && (
-                  <div className="col-span-2 p-8 text-center text-[#6B7280] text-xs font-mono">
-                    No distribution recommendations available.
+                  <span>
+                    {optimizing ? "Computing..." : "Re-Run Optimization"}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Main Container */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+        {viewMode === "farmer" ? (
+          <FarmerView
+            batches={batches}
+            recommendations={distributionPlan?.recommendations || []}
+            storages={storages}
+            onOpenRegisterModal={() => setCreateModalOpen(true)}
+            onRefresh={fetchAllData}
+            loading={loading}
+            onSwitchToManager={() => setViewMode("manager")}
+          />
+        ) : (
+          <>
+            {/* Top 5 KPI Grid */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* 1. Total Produce Tracked */}
+              <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
+                <div>
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+                    Active Produce
+                  </span>
+                  <div className="mt-3 flex items-baseline gap-1">
+                    <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
+                      {summary
+                        ? (summary.total_produce_kg / 1000).toFixed(1)
+                        : "--"}
+                    </span>
+                    <span className="text-sm font-medium text-neutral-400">k kg</span>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-neutral-400">
+                  {summary
+                    ? `${summary.active_batches_count} batches logged`
+                    : "Loading..."}
+                </div>
+              </div>
+
+              {/* 2. Remaining Shelf Life */}
+              <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
+                <div>
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+                    Avg Shelf Life
+                  </span>
+                  <div className="mt-3 flex items-baseline gap-1">
+                    <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
+                      {summary ? summary.avg_remaining_shelf_life_days : "--"}
+                    </span>
+                    <span className="text-sm font-medium text-neutral-400">days</span>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-neutral-400">
+                  {summary?.critical_batches_count ? (
+                    <span className="text-amber-400 font-medium">
+                      {summary.critical_batches_count} critical (&lt;3 days)
+                    </span>
+                  ) : (
+                    "All batches nominal"
+                  )}
+                </div>
+              </div>
+
+              {/* 3. Buyer Demand */}
+              <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
+                <div>
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+                    Buyer Demand
+                  </span>
+                  <div className="mt-3 flex items-baseline gap-1">
+                    <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
+                      {summary
+                        ? (summary.buyer_demand.total_demand_kg / 1000).toFixed(1)
+                        : "--"}
+                    </span>
+                    <span className="text-sm font-medium text-neutral-400">k kg</span>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-neutral-400">
+                  {summary
+                    ? `${(summary.buyer_demand.primary_demand_kg / 1000).toFixed(
+                      1
+                    )}k retail / ${(
+                      summary.buyer_demand.secondary_demand_kg / 1000
+                    ).toFixed(1)}k puree`
+                    : "Loading..."}
+                </div>
+              </div>
+
+              {/* 4. Storage Availability */}
+              <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
+                <div>
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+                    Cold Storage
+                  </span>
+                  <div className="mt-3 flex items-baseline gap-1">
+                    <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
+                      {summary ? summary.storage.utilization_pct : "--"}
+                    </span>
+                    <span className="text-sm font-medium text-neutral-400">% used</span>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-neutral-400">
+                  {summary
+                    ? `${(summary.storage.available_capacity_kg / 1000).toFixed(
+                      1
+                    )}k kg available`
+                    : "Loading..."}
+                </div>
+              </div>
+
+              {/* 5. Transport Fleet Payload */}
+              <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
+                <div>
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+                    Vehicle Fleet
+                  </span>
+                  <div className="mt-3 flex items-baseline gap-1">
+                    <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
+                      {summary
+                        ? (summary.vehicles.total_payload_kg / 1000).toFixed(1)
+                        : "--"}
+                    </span>
+                    <span className="text-sm font-medium text-neutral-400">k kg cap</span>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-neutral-400">
+                  {summary
+                    ? `${summary.vehicles.refrigerated_count} cold / ${summary.vehicles.ambient_count} ambient`
+                    : "Loading..."}
+                </div>
+              </div>
+            </section>
+
+            {/* TAB: MISSION CONTROL OVERVIEW */}
+            {activeTab === "overview" && (
+              <div
+                id="panel-overview"
+                role="tabpanel"
+                aria-labelledby="tab-overview"
+                tabIndex={0}
+                className="focus:outline-none"
+              >
+                <IntegratedMissionControl
+                  onNavigateToTab={(tab) => setActiveTab(tab as typeof activeTab)}
+                />
+              </div>
+            )}
+
+            {/* TAB: DYNAMIC REROUTING */}
+            {activeTab === "rerouting" && (
+              <div
+                id="panel-rerouting"
+                role="tabpanel"
+                aria-labelledby="tab-rerouting"
+                tabIndex={0}
+                className="focus:outline-none"
+              >
+                <DynamicReroutingView />
+              </div>
+            )}
+
+            {/* TAB: SECONDARY-MARKET RECOVERY */}
+            {activeTab === "secondary" && <SecondaryRecoveryView />}
+
+            {/* TAB: SPOILAGE-RISK ENGINE */}
+            {activeTab === "spoilage" && <SpoilageSimulator />}
+
+            {/* TAB: DISTRIBUTION ENGINE */}
+            {activeTab === "distribution" && (
+              <div className="space-y-6">
+                {/* Optimization Financial Banner */}
+                {distributionPlan && (
+                  <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-900 via-slate-900 to-slate-950 text-white border border-emerald-800 shadow-md">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                      <div>
+                        <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium">
+                          <Cpu className="w-4 h-4" />
+                          <span>FEFO-Optimized Plan: <span className="font-mono">{distributionPlan.plan_id}</span></span>
+                        </div>
+                        <h2 className="text-xl font-bold mt-1 tracking-tight">
+                          Multi-Echelon Allocation & Transportation Economics
+                        </h2>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" /> Demand Limits Respected
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20 flex items-center gap-1 font-medium text-[11px]">
+                          <Check className="w-3.5 h-3.5" /> Vehicle Payload Checked
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20 flex items-center gap-1 font-medium text-[11px]">
+                          <Check className="w-3.5 h-3.5" /> Shelf Life Safe
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 pt-4 text-xs">
+                      <div>
+                        <span className="text-neutral-400 block font-medium uppercase tracking-wider text-[10px]">Allocated Volume</span>
+                        <div className="text-xl font-bold text-white mt-1 tabular-nums">
+                          {distributionPlan.total_allocated_kg.toLocaleString()}<span className="text-xs font-normal text-neutral-400 ml-1">kg</span>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-neutral-400 block font-medium uppercase tracking-wider text-[10px]">Unallocated Volume</span>
+                        <div className="text-xl font-bold text-[#FF9F0A] mt-1 tabular-nums">
+                          {distributionPlan.total_unallocated_kg.toLocaleString()}<span className="text-xs font-normal text-neutral-400 ml-1">kg</span>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-neutral-400 block font-medium uppercase tracking-wider text-[10px]">Expected Gross Revenue</span>
+                        <div className="text-xl font-bold text-white mt-1 tabular-nums">
+                          <span className="text-xs font-medium mr-0.5 text-neutral-400">₹</span>{distributionPlan.total_expected_revenue.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-neutral-400 block font-medium uppercase tracking-wider text-[10px]">Total Transport Cost</span>
+                        <div className="text-xl font-bold text-[#FF453A] mt-1 tabular-nums">
+                          <span className="text-xs font-medium mr-0.5 text-neutral-400">₹</span>{distributionPlan.total_transport_cost.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-neutral-400 block font-medium uppercase tracking-wider text-[10px]">Net Economic Yield</span>
+                        <div className="text-xl font-bold text-[#30D158] mt-1 tabular-nums">
+                          <span className="text-xs font-medium mr-0.5 text-neutral-400">₹</span>{distributionPlan.total_net_margin.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-5 rounded-2xl bg-white border border-[#BBF7D0] shadow-sm space-y-3">
+                {/* Recommendations List */}
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-sm text-[#14532D] font-mono flex items-center gap-2">
-                      <Scale className="w-4 h-4 text-[#D97706]" />
-                      Unallocated Produce Inventory ({distributionPlan?.unallocated_batches.length ?? 0})
-                    </h4>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
-                      Buffer Stock
+                    <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                      <Route className="w-4 h-4 text-[#30D158]" />
+                      <span>Recommended Produce Allocations ({distributionPlan?.recommendations.length ?? 0})</span>
+                    </h3>
+                    <span className="text-xs text-neutral-400">
+                      Prioritized by basal decay rate & maximum net margin
                     </span>
                   </div>
-                  <div className="space-y-2">
-                    {distributionPlan?.unallocated_batches.map((ub, idx) => (
-                      <UnallocatedItem key={idx} item={ub} />
-                    ))}
-                    {distributionPlan?.unallocated_batches.length === 0 && (
-                      <div className="text-xs font-mono text-[#9CA3AF] py-4 text-center">
-                        All produce batches fully allocated.
-                      </div>
-                    )}
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {distributionPlan?.recommendations.map((rec) => {
+                      const isPrimary = rec.buyer_type === "primary_retail";
+                      return (
+                        <div
+                          key={rec.allocation_id}
+                          className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm hover:border-white/[0.15] transition-all space-y-3"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm text-white">
+                                {rec.crop_type}
+                              </span>
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#30D158]/10 border border-[#30D158]/20 text-[#30D158] tabular-nums">
+                                {rec.allocated_quantity_kg.toLocaleString()} kg
+                              </span>
+                            </div>
+                            <span
+                              className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium uppercase tracking-wider ${isPrimary
+                                  ? "bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20"
+                                  : "bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20"
+                                }`}
+                            >
+                              {isPrimary ? "Primary Retail" : "Secondary Processor"}
+                            </span>
+                          </div>
+
+                          {/* Route Map description */}
+                          <div className="text-xs space-y-1.5 p-3 rounded-xl bg-[#18181A] border border-white/[0.06]">
+                            <div className="flex items-center justify-between text-neutral-400">
+                              <span className="text-neutral-500">Origin:</span>
+                              <span className="font-medium text-neutral-200">
+                                {rec.farmer_name} ({rec.origin_location})
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-neutral-400">
+                              <span className="text-neutral-500">Destination:</span>
+                              <span className="font-medium text-neutral-200">
+                                {rec.buyer_name} ({rec.destination_location})
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-neutral-400">
+                              <span className="text-neutral-500">Assigned Truck:</span>
+                              <span className="text-neutral-300">
+                                {rec.vehicle_number} (
+                                {rec.is_refrigerated ? "Refrigerated" : "Ambient"})
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Metrics bar */}
+                          <div className="grid grid-cols-4 gap-2 text-center text-xs py-2 border-y border-white/[0.06]">
+                            <div>
+                              <div className="text-[10px] text-neutral-500">Distance</div>
+                              <div className="font-medium text-neutral-200 tabular-nums">
+                                {rec.distance_km} km
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] text-neutral-500">Transit</div>
+                              <div className="font-medium text-neutral-200 tabular-nums">
+                                {rec.estimated_transit_hours}h
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] text-neutral-500">Freight Cost</div>
+                              <div className="font-medium text-[#FF453A] tabular-nums">
+                                ₹{rec.transport_cost.toLocaleString()}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] text-neutral-500">Net Profit</div>
+                              <div className="font-medium text-[#30D158] tabular-nums">
+                                ₹{rec.net_margin.toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Explanation */}
+                          <div className="p-3 rounded-xl bg-[#18181A] border border-white/[0.06] text-xs text-neutral-300">
+                            <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 mb-1">
+                              Optimization Rationale
+                            </div>
+                            {rec.explanation}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-white border border-[#BBF7D0] shadow-sm space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-sm text-[#14532D] font-mono flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-[#DC2626]" />
-                      Unfulfilled Buyer Demand ({distributionPlan?.unfulfilled_demands.length ?? 0})
-                    </h4>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FEE2E2] text-[#991B1B] border border-[#FECACA]">
-                      Demand Deficit
+                {/* Unallocated and Unfulfilled section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Unallocated Batches */}
+                  <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm text-white flex items-center gap-2">
+                        <Scale className="w-4 h-4 text-[#FF9F0A]" />
+                        <span>Unallocated Produce Inventory ({distributionPlan?.unallocated_batches.length ?? 0})</span>
+                      </h4>
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20 font-medium uppercase tracking-wider">
+                        Buffer Stock
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {distributionPlan?.unallocated_batches.map((ub, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-xl bg-[#18181A] border border-white/[0.06] text-xs space-y-1.5"
+                        >
+                          <div className="flex justify-between font-medium text-white">
+                            <span>
+                              {ub.crop_type} ({ub.farmer_name})
+                            </span>
+                            <span className="text-[#FF9F0A] tabular-nums font-semibold">
+                              {ub.unallocated_quantity_kg.toLocaleString()} kg
+                            </span>
+                          </div>
+                          <div className="text-neutral-400 text-[11px]">{ub.reason}</div>
+                          <div className="text-[#30D158] text-[11px] font-medium">
+                            Action: {ub.recommended_action}
+                          </div>
+                        </div>
+                      ))}
+                      {distributionPlan?.unallocated_batches.length === 0 && (
+                        <div className="text-xs text-neutral-500 py-4 text-center">
+                          All produce batches fully allocated.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Unfulfilled Buyer Demand */}
+                  <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm text-white flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-[#FF453A]" />
+                        <span>Unfulfilled Buyer Demand ({distributionPlan?.unfulfilled_demands.length ?? 0})</span>
+                      </h4>
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#FF453A]/10 text-[#FF453A] border border-[#FF453A]/20 font-medium uppercase tracking-wider">
+                        Demand Deficit
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {distributionPlan?.unfulfilled_demands.map((ud, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-xl bg-[#18181A] border border-white/[0.06] text-xs space-y-1.5"
+                        >
+                          <div className="flex justify-between font-medium text-white">
+                            <span>
+                              {ud.buyer_name} ({ud.crop_type})
+                            </span>
+                            <span className="text-[#FF453A] tabular-nums font-semibold">
+                              {ud.unfulfilled_demand_kg.toLocaleString()} kg short
+                            </span>
+                          </div>
+                          <div className="text-neutral-400 text-[11px]">{ud.reason}</div>
+                        </div>
+                      ))}
+                      {distributionPlan?.unfulfilled_demands.length === 0 && (
+                        <div className="text-xs text-neutral-500 py-4 text-center">
+                          All buyer demand completely fulfilled.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: PRODUCE INVENTORY & BATCHES */}
+            {activeTab === "batches" && (
+              <div className="space-y-4">
+                {/* Filter Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-[#141416] border border-white/[0.08] text-xs font-sans">
+                  <div className="flex items-center gap-2 text-neutral-400">
+                    <Filter className="w-3.5 h-3.5 text-[#30D158]" />
+                    <span className="font-medium text-neutral-300">
+                      Filters
                     </span>
                   </div>
-                  <div className="space-y-2">
-                    {distributionPlan?.unfulfilled_demands.map((ud, idx) => (
-                      <UnfulfilledItem key={idx} item={ud} />
-                    ))}
-                    {distributionPlan?.unfulfilled_demands.length === 0 && (
-                      <div className="text-xs font-mono text-[#9CA3AF] py-4 text-center">
-                        All buyer demand completely fulfilled.
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-neutral-400">Crop:</span>
+                      <select
+                        value={cropFilter}
+                        onChange={(e) => setCropFilter(e.target.value)}
+                        className="px-2.5 py-1 rounded-lg border border-white/[0.12] bg-[#1C1C1E] text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#30D158]"
+                      >
+                        <option value="all">All Crops</option>
+                        <option value="tomato">Tomato</option>
+                        <option value="potato">Potato</option>
+                        <option value="onion">Onion</option>
+                        <option value="mango">Mango</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-neutral-400">Status:</span>
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="px-2.5 py-1 rounded-lg border border-white/[0.12] bg-[#1C1C1E] text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#30D158]"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="harvested">Harvested</option>
+                        <option value="in_storage">In Storage</option>
+                        <option value="in_transit">In Transit</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="diverted">Diverted</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Produce Batches Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredBatches.map((batch) => {
+                    const isAmbient = batch.storage_condition === "ambient_heap";
+                    const isCold = batch.storage_condition === "cold_storage";
+
+                    return (
+                      <div
+                        key={batch.id}
+                        className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm hover:border-white/[0.15] transition-all flex flex-col justify-between"
+                      >
+                        <div>
+                          {/* Top row */}
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-base font-semibold text-white">
+                                {batch.crop_type}
+                              </span>
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#30D158]/10 border border-[#30D158]/20 text-[#30D158] tabular-nums">
+                                {batch.quantity_kg.toLocaleString()} kg
+                              </span>
+                            </div>
+                            <span
+                              className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium uppercase tracking-wider ${batch.status === "harvested"
+                                  ? "bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20"
+                                  : batch.status === "in_storage"
+                                    ? "bg-white/[0.08] text-neutral-300 border border-white/[0.1]"
+                                    : "bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20"
+                                }`}
+                            >
+                              {batch.status.replace("_", " ")}
+                            </span>
+                          </div>
+
+                          {/* Farmer info */}
+                          <div className="text-xs text-neutral-400 font-sans space-y-1 mb-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-neutral-500">Producer:</span>
+                              <span className="font-medium text-neutral-200">
+                                {batch.farmers?.name || "Smallholder Producer"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-neutral-500">Cluster Location:</span>
+                              <span className="text-neutral-300">{batch.farmers?.location || "Regional Cluster"}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-neutral-500">Storage Environment:</span>
+                              <span
+                                className={`font-medium ${isAmbient
+                                    ? "text-[#FF453A]"
+                                    : isCold
+                                      ? "text-[#30D158]"
+                                      : "text-[#FF9F0A]"
+                                  }`}
+                              >
+                                {batch.storage_condition.replace("_", " ")}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-neutral-500">Basal Decay Rate:</span>
+                              <span className="text-neutral-300 tabular-nums">+{batch.basal_degradation_score} pts/day</span>
+                            </div>
+                          </div>
+
+                          {/* Shelf life progress gauge */}
+                          <div className="pt-2 border-t border-white/[0.06]">
+                            <ShelfLifeBadge
+                              remainingDays={batch.remaining_shelf_life_days}
+                              initialDays={batch.initial_shelf_life_days}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Bottom actions */}
+                        <div className="pt-4 mt-4 border-t border-white/[0.06] flex items-center justify-between">
+                          <span className="text-[10px] text-neutral-500 tabular-nums">
+                            Harvest: {batch.harvest_date}
+                          </span>
+                          <button
+                            onClick={() => setSelectedBatchForEdit(batch)}
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-200 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            <span>Update Status</span>
+                          </button>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-          </DataCard>
-        )}
+            )}
 
-        {/* TAB: PRODUCE INVENTORY & BATCHES */}
-        {activeTab === "batches" && (
-          <DataCard padding="none">
-            <DataCardHeader
-              title="Produce Inventory"
-              description="Filter and manage harvested crop batches across the supply chain."
-              icon={Truck}
-            />
-
-            <div className="p-6 border-b border-[#BBF7D0]/50">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-xs font-mono">
-                  <span className="text-[#9CA3AF]">Filters:</span>
+            {/* TAB 3: BUYER DEMAND MATRIX */}
+            {activeTab === "buyers" && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-[#141416] border border-white/[0.08] text-xs text-neutral-300 flex items-start gap-2.5">
+                  <Warehouse className="w-4 h-4 text-[#30D158] mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-semibold text-white">
+                      Dual-Tier Arbitrage Demand Architecture:
+                    </span>{" "}
+                    Primary retail buyers require premium cosmetics and &gt;24h shelf life at full market value (e.g., ₹42/kg). Secondary processors (puree, paste, juice) absorb thermally stressed goods at salvage rates (e.g., ₹26.50/kg) with lower quality thresholds down to 8h.
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[#9CA3AF] text-[11px]">Crop:</span>
-                    <select
-                      value={cropFilter}
-                      onChange={(e) => setCropFilter(e.target.value)}
-                      className="px-2.5 py-1.5 rounded-lg border border-[#E5E7EB] bg-[#F8FAFC] text-[#14532D] text-xs font-mono cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#15803D]"
-                    >
-                      <option value="all">All Crops</option>
-                      <option value="tomato">Tomato</option>
-                      <option value="potato">Potato</option>
-                      <option value="onion">Onion</option>
-                      <option value="mango">Mango</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[#9CA3AF] text-[11px]">Status:</span>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-2.5 py-1.5 rounded-lg border border-[#E5E7EB] bg-[#F8FAFC] text-[#14532D] text-xs font-mono cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#15803D]"
-                    >
-                      <option value="all">All Statuses</option>
-                      <option value="harvested">Harvested</option>
-                      <option value="in_storage">In Storage</option>
-                      <option value="in_transit">In Transit</option>
-                      <option value="delivered">Delivered</option>
-                      <option value="diverted">Diverted</option>
-                    </select>
-                  </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {buyers.map((b) => {
+                    const isPrimary = b.type === "primary_retail";
+                    return (
+                      <div
+                        key={b.id}
+                        className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm hover:border-white/[0.15] transition-all"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h3 className="font-semibold text-sm text-white">
+                              {b.name}
+                            </h3>
+                            <p className="text-xs text-neutral-400 mt-0.5">
+                              {b.location}
+                            </p>
+                          </div>
+                          <span
+                            className={`text-[10px] font-medium px-2.5 py-0.5 rounded-full uppercase tracking-wider ${isPrimary
+                                ? "bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20"
+                                : "bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20"
+                              }`}
+                          >
+                            {isPrimary ? "Primary Retail" : "Secondary Processor"}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 py-3 border-y border-white/[0.06] text-xs">
+                          <div>
+                            <div className="text-neutral-500 text-[11px]">Crop Demand</div>
+                            <div className="font-medium text-neutral-200 mt-0.5">
+                              {b.demand_crop}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-neutral-500 text-[11px]">Volume (kg)</div>
+                            <div className="font-semibold text-neutral-200 mt-0.5 tabular-nums">
+                              {b.demand_kg.toLocaleString()}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-neutral-500 text-[11px]">Offered Price</div>
+                            <div className="font-semibold text-[#30D158] mt-0.5 tabular-nums">
+                              ₹{b.offered_price_per_kg}/kg
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between text-xs text-neutral-400">
+                          <span>Min Arrival Shelf Life:</span>
+                          <span className="font-medium text-neutral-200 tabular-nums">
+                            ≥ {b.quality_threshold_min_shelf_life_hours} hours
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredBatches.map((batch) => (
-                <BatchCard
-                  key={batch.id}
-                  batch={batch}
-                  onUpdate={(b) => setSelectedBatchForEdit(b)}
-                />
-              ))}
-              {filteredBatches.length === 0 && (
-                <div className="col-span-3 p-12 text-center text-[#9CA3AF] text-xs font-mono">
-                  No produce batches match the selected filters.
+            {/* TAB 4: COLD STORAGE CAPACITY */}
+            {activeTab === "storage" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {storages.map((s) => {
+                    const utilPct = Math.round(
+                      (s.current_utilization_kg / s.total_capacity_kg) * 100
+                    );
+                    const available =
+                      s.total_capacity_kg - s.current_utilization_kg;
+                    return (
+                      <div
+                        key={s.id}
+                        className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm space-y-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-sm text-white">
+                              {s.name}
+                            </h3>
+                            <p className="text-xs text-neutral-400 mt-0.5">
+                              {s.location}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs font-medium text-[#30D158] bg-[#30D158]/10 border border-[#30D158]/20 px-2 py-0.5 rounded-full tabular-nums">
+                              {utilPct}% Utilized
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Capacity Track */}
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-neutral-400 tabular-nums">
+                              {s.current_utilization_kg.toLocaleString()} kg used
+                            </span>
+                            <span className="font-medium text-[#30D158] tabular-nums">
+                              {available.toLocaleString()} kg free
+                            </span>
+                          </div>
+                          <div className="w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
+                            <div
+                              className="h-full bg-[#30D158] rounded-full transition-all duration-300"
+                              style={{ width: `${utilPct}%` }}
+                            />
+                          </div>
+                          <div className="text-right text-[10px] text-neutral-500 tabular-nums">
+                            Total Capacity: {s.total_capacity_kg.toLocaleString()} kg
+                          </div>
+                        </div>
+
+                        {/* Telemetry metrics */}
+                        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/[0.06] text-xs">
+                          <div className="p-2.5 rounded-xl bg-[#18181A] border border-white/[0.06] text-center">
+                            <div className="text-neutral-500 text-[10px]">Temperature</div>
+                            <div className="font-semibold text-[#30D158] mt-0.5 tabular-nums">
+                              {s.temperature_celsius}°C
+                            </div>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-[#18181A] border border-white/[0.06] text-center">
+                            <div className="text-neutral-500 text-[10px]">Humidity</div>
+                            <div className="font-semibold text-neutral-200 mt-0.5 tabular-nums">
+                              {s.humidity_pct}%
+                            </div>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-[#18181A] border border-white/[0.06] text-center">
+                            <div className="text-neutral-500 text-[10px]">Holding Tariff</div>
+                            <div className="font-medium text-neutral-200 mt-0.5">
+                              ₹{s.cost_per_kg_per_day}/kg/d
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          </DataCard>
-        )}
+              </div>
+            )}
 
-        {/* TAB: BUYER DEMAND MATRIX */}
-        {activeTab === "buyers" && (
-          <DataCard padding="none">
-            <DataCardHeader
-              title="Buyer Demand Matrix"
-              description="Dual-tier arbitrage demand architecture connecting primary retail buyers with secondary processors."
-              icon={Warehouse}
-            />
+            {/* TAB 5: VEHICLE FLEET & TELEMETRY */}
+            {activeTab === "vehicles" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {vehicles.map((v) => {
+                    const isCold = v.is_refrigerated;
+                    return (
+                      <div
+                        key={v.id}
+                        className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Truck className="w-4 h-4 text-[#30D158]" />
+                            <span className="font-semibold text-sm text-white">
+                              {v.vehicle_number}
+                            </span>
+                          </div>
+                          <span
+                            className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium uppercase tracking-wider ${v.status === "in_transit"
+                                ? "bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20"
+                                : "bg-white/[0.08] text-neutral-300 border border-white/[0.1]"
+                              }`}
+                          >
+                            {v.status.replace("_", " ")}
+                          </span>
+                        </div>
 
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {buyers.map((b) => (
-                <BuyerCard key={b.id} buyer={b} />
-              ))}
-              {buyers.length === 0 && (
-                <div className="col-span-2 p-12 text-center text-[#9CA3AF] text-xs font-mono">
-                  No buyer records available.
+                        <div className="text-xs space-y-1.5 text-neutral-400 font-sans">
+                          <div className="flex justify-between">
+                            <span className="text-neutral-500">Driver:</span>
+                            <span className="font-medium text-neutral-200">
+                              {v.driver_name}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-neutral-500">Max Payload:</span>
+                            <span className="tabular-nums font-medium text-neutral-200">{v.max_payload_kg.toLocaleString()} kg</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-neutral-500">Cooling System:</span>
+                            <span
+                              className={`font-medium ${isCold
+                                  ? "text-[#30D158]"
+                                  : "text-[#FF9F0A]"
+                                }`}
+                            >
+                              {isCold
+                                ? "Active Refrigeration"
+                                : "Ambient Ventilation"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Telemetry pill */}
+                        <div className="p-3 rounded-xl bg-[#18181A] border border-white/[0.06] flex items-center justify-between text-xs text-neutral-300">
+                          <div className="flex items-center gap-1.5">
+                            <Thermometer className="w-3.5 h-3.5 text-[#FF9F0A]" />
+                            <span className="tabular-nums">Temp: {v.current_temp_celsius}°C</span>
+                          </div>
+                          <span className="text-neutral-600">|</span>
+                          <span className="tabular-nums">RH: {v.current_humidity_pct}%</span>
+                          <span className="text-neutral-600">|</span>
+                          <span className="tabular-nums">₹{v.cost_per_km}/km</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          </DataCard>
-        )}
-
-        {/* TAB: COLD STORAGE CAPACITY */}
-        {activeTab === "storage" && (
-          <DataCard padding="none">
-            <DataCardHeader
-              title="Cold Storage Facilities"
-              description="Cold chain hubs and warehouses with real-time temperature and humidity telemetry."
-              icon={ThermometerSnowflake}
-            />
-
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {storages.map((s) => (
-                <StorageCard key={s.id} facility={s} />
-              ))}
-              {storages.length === 0 && (
-                <div className="col-span-2 p-12 text-center text-[#9CA3AF] text-xs font-mono">
-                  No storage facilities available.
-                </div>
-              )}
-            </div>
-          </DataCard>
-        )}
-
-        {/* TAB: VEHICLE FLEET & TELEMETRY */}
-        {activeTab === "vehicles" && (
-          <DataCard padding="none">
-            <DataCardHeader
-              title="Vehicle Fleet"
-              description="Logistics fleet with IoT telemetry, refrigeration specs, and real-time sensor metrics."
-              icon={Truck}
-            />
-
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {vehicles.map((v) => (
-                <VehicleCard key={v.id} vehicle={v} />
-              ))}
-              {vehicles.length === 0 && (
-                <div className="col-span-3 p-12 text-center text-[#9CA3AF] text-xs font-mono">
-                  No vehicles available.
-                </div>
-              )}
-            </div>
-          </DataCard>
-        )}
-
-        {/* TAB: LOGISTICS MAP WITH ARRHENIUS SPOILAGE ROUTING */}
-        {activeTab === "logistics-map" && (
-          <LogisticsMapView
-            recommendations={distributionPlan?.recommendations ?? []}
-            batches={batches}
-            buyers={buyers}
-            vehicles={vehicles}
-            storages={storages}
-            workflowData={workflowData}
-            onNavigateToTab={(tab) => setActiveTab(tab as TabId)}
-          />
+              </div>
+            )}
+          </>
         )}
       </main>
 
@@ -674,10 +1307,10 @@ export default function Dashboard() {
       />
 
       {/* Footer */}
-      <footer className="mt-16 border-t border-[#BBF7D0]/60 py-6 text-center text-xs text-[#6B7280] font-mono">
-        <p>HARVEST ZERO © 2026 — Intelligent Post-Harvest Loss Prevention & Kinetic Cold-Chain Logistics</p>
-        <p className="mt-1 text-[11px] text-[#9CA3AF]">
-          Decision Support Platform for Farmers, Transport Fleets & Multi-Tier Agro Buyers
+      <footer className="mt-16 border-t border-white/[0.08] py-8 text-center text-xs text-neutral-500 font-sans">
+        <p className="text-neutral-400">HARVEST ZERO © 2026. Post-Harvest Loss Prevention and Cold-Chain Logistics</p>
+        <p className="mt-1 text-[11px] text-neutral-500">
+          Decision support platform connecting farmers, cold storage facilities, transport fleets, and commercial buyers.
         </p>
       </footer>
     </div>
