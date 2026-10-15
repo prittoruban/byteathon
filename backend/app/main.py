@@ -16,6 +16,8 @@ from backend.app.models import (
 from backend.app.distribution_engine import (
     optimize_distribution_plan,
     DistributionPlan,
+    compare_baseline_vs_harvest_zero,
+    BaselineComparison,
 )
 from backend.app.spoilage_engine import (
     CROP_KINETIC_DATABASE,
@@ -483,6 +485,43 @@ async def simulate_distribution_scenario(payload: Dict[str, Any]):
         storage_facilities=storages,
     )
     return plan
+
+
+@app.get(
+    "/api/distribution/baseline-comparison",
+    tags=["Distribution Engine"],
+    response_model=BaselineComparison,
+)
+async def get_distribution_baseline_comparison():
+    """
+    Step 9: Benchmarks the intelligent Harvest Zero plan against traditional
+    unoptimized baseline logistics (FIFO allocation, no thermal micro-climate matching,
+    arbitrary ambient routing leading to shelf-life degradation and retail dock rejections).
+    """
+    client = get_supabase_client()
+    batches = (
+        client.table("produce_batches")
+        .select("*, farmers(name, location, latitude, longitude)")
+        .execute()
+        .data
+        or []
+    )
+    buyers = client.table("buyers").select("*").execute().data or []
+    vehicles = client.table("transport_vehicles").select("*").execute().data or []
+    storages = client.table("storage_facilities").select("*").execute().data or []
+
+    active_batches = [
+        b for b in batches if b.get("status") in ["harvested", "in_storage"]
+    ]
+
+    comparison = compare_baseline_vs_harvest_zero(
+        batches=active_batches,
+        buyers=buyers,
+        vehicles=vehicles,
+        storages=storages,
+    )
+    return comparison
+
 
 
 # ====================================================================

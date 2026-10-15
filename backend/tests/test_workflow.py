@@ -28,10 +28,25 @@ def test_end_to_end_temperature_spike_resolution_workflow():
             "transport_vehicles(id, vehicle_number, is_refrigerated, current_temp_celsius, current_humidity_pct, current_latitude, current_longitude, cost_per_km), "
             "destination_buyer:buyers!shipments_destination_buyer_id_fkey(id, name, type, location, latitude, longitude, offered_price_per_kg, demand_crop, demand_kg)"
         )
-        .eq("status", "in_transit")
+        .in_("status", ["in_transit", "rerouted"])
         .limit(1)
         .execute()
     )
+
+    if not shipments_res.data:
+        # Reset sample shipment so the live workflow test can execute deterministically
+        client.table("shipments").update({"status": "in_transit"}).eq("id", "42119c80-f97f-473a-914e-dc37ee0ccf45").execute()
+        shipments_res = (
+            client.table("shipments")
+            .select(
+                "*, produce_batches(id, crop_type, quantity_kg, initial_shelf_life_days, remaining_shelf_life_days), "
+                "transport_vehicles(id, vehicle_number, is_refrigerated, current_temp_celsius, current_humidity_pct, current_latitude, current_longitude, cost_per_km), "
+                "destination_buyer:buyers!shipments_destination_buyer_id_fkey(id, name, type, location, latitude, longitude, offered_price_per_kg, demand_crop, demand_kg)"
+            )
+            .in_("status", ["in_transit", "rerouted"])
+            .limit(1)
+            .execute()
+        )
 
     assert len(shipments_res.data) > 0, "At least one active in-transit shipment required in database"
     shipment = shipments_res.data[0]

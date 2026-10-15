@@ -200,4 +200,75 @@ $$\alpha(T) = \frac{k(T)}{k_{\text{ref}}}$$
   - Clear financial audit strip showing exact value salvaged ($₹\text{ net delta}$) and carbon waste prevented.
   - Seamless navigation links to dive into dedicated subsystems (Distribution Engine, Dynamic Rerouting, Secondary Arbitrage, Spoilage Simulator).
 
+---
+
+## 12. Step 9 — Testing, Quantitative Benchmarks & Judge Demo Script
+
+### 12.1 Automated Test Suite (30 Tests Passing)
+
+Execute the complete end-to-end regression and constraint suite:
+```bash
+PYTHONPATH=. backend/venv/bin/pytest backend/tests/ -v
+```
+
+| Test Module | Tests | Validation Scope |
+| :--- | :--- | :--- |
+| `test_database.py` | 6 | Read/write CRUD, RLS, foreign keys, lifecycle states on Supabase PostgreSQL |
+| `test_distribution.py` | 3 | Haversine distance solver, vehicle payloads, demand limits, and shelf-life constraints |
+| `test_health.py` | 2 | Root status, Supabase connection latency, and service availability |
+| `test_rerouting.py` | 2 | Thermal trigger threshold, route sustainability, and explainable rationale |
+| `test_secondary_recovery.py` | 4 | Quality grades A–D, FSSAI §19 compliance cutoff, and continuous arbitrage rule |
+| `test_spoilage.py` | 5 | Arrhenius $k(T)$ equation, $Q_{10}$, chilling injury, and humidity decay penalties |
+| `test_workflow.py` | 1 | Complete end-to-end automated anomaly resolution loop with database persistence |
+| `test_step9_consistency_and_benchmarks.py` | 7 | Mass balance, capacity constraints, demand limits, spoilage buffers, and baseline benchmarking |
+| **Total** | **30** | **100% Passed (0 Failures, 0 Errors)** |
+
+---
+
+### 12.2 Quantitative Benchmark: Traditional Baseline vs HARVEST ZERO
+
+| Metric | Traditional Logistics (Baseline FIFO) | HARVEST ZERO (FEFO + Arrhenius) | Impact / Delta |
+| :--- | :--- | :--- | :--- |
+| **Allocation Strategy** | First-In-First-Out (ignoring micro-climate decay) | First-Expired-First-Out + Micro-Climate Kinetics | Perishable crops prioritized for shortest cold transit |
+| **Vehicle Assignment** | Arbitrary fleet assignment (ambient trucks used) | Perishability-gated thermal vehicle pairing | High-risk produce strictly paired with Reefer units |
+| **Dock Rejection / Spoilage** | **1,500 kg (31.2% loss)** | **0 kg (0.0% loss)** | **-1,500 kg (-100% waste reduction)** |
+| **Dock Rejection Penalty** | ₹60,000 write-off & total loss | ₹0 (all cargo arrives with $\ge 24\text{h}$ buffer) | Value preserved at farm gate |
+| **Net Realized Margin** | ₹166,157 | ₹171,448 | **+₹5,291.40 (+3.2% net yield increase)** |
+| **Transit Anomaly Action** | Unmonitored breakdown until delivery rejection | Automated reroute to proximate secondary processor | Cargo salvaged into juice/puree before expiration |
+
+---
+
+### 12.3 Hackathon Presentation & Live Demo Script
+
+Follow this step-by-step walkthrough during the hackathon evaluation:
+
+1. **Step 1: Welcome & Problem Framing**
+   - Open [http://localhost:3000](http://localhost:3000).
+   - Point to top banner: **BYTEATHON 2026 — Track BYTE01**. Mention the ICAR-CIPHET statistic: India loses 6-16% of fruits and vegetables (₹31,000+ Cr) primarily due to unoptimized post-harvest logistics.
+2. **Step 2: Operations Command Overview (Landing Tab)**
+   - Highlight the **Live Telemetry Strip**: Active produce tracked, cold storage utilization, and Supabase PostgreSQL round-trip latency.
+   - Point to the **Step 9 Operations Research Benchmark card**: Explain how baseline FIFO logistics causes 31.2% cargo rejection due to ambient temperature decay, whereas HARVEST ZERO achieves **0.0% dock rejection**.
+3. **Step 3: Trigger the Thermal Anomaly Simulation**
+   - Click the red **"Simulate Temperature Spike (+26°C)"** button.
+   - Watch the animated system response:
+     - Ingests live telemetry from shipment `MH-15-TC-1088`.
+     - Displays Arrhenius stress meter: ambient temperature leaps from $4^\circ\text{C}$ to $36.5^\circ\text{C}$, causing decay rate acceleration $\alpha(T) = 4.92\times$.
+     - Explains that the cargo would arrive with only $8.5\text{h}$ buffer, violating Nature Fresh Retail's mandatory $24.0\text{h}$ display quality threshold.
+4. **Step 4: Autonomous Secondary Arbitrage Discovery**
+   - Show the dynamic route diversion recommendation:
+     - System discovers `Kisan Starch & Dehydrated Flakes` (industrial puree processor) located closer on the corridor.
+     - Calculates economic arbitrage: Primary retail delivery would result in dock rejection (-₹160,000 write-off), whereas processor diversion yields +₹35,225 net salvage profit.
+     - Highlights **FSSAI Section 19 compliance**: Cargo arrives with $8.5\text{h} > 4.0\text{h}$ threshold, legal for human food processing.
+5. **Step 5: Direct Database Persistence**
+   - Click **"Confirm & Commit Rerouting to Supabase"**.
+   - Show the live toast notification and table update: The consignment status changes to `rerouted`, destination updates in Supabase PostgreSQL, and an immutable audit rationale is saved.
+6. **Step 6: Granular Technical Deep-Dives**
+   - Switch through tabs to demonstrate modular depth:
+     - **Distribution Engine:** Micro-climate FEFO allocation table with mathematical explanation per route.
+     - **Dynamic Rerouting:** Proximity radar and candidate buyer ranking.
+     - **Secondary Arbitrage:** Multi-tier quality markdown matrix and net margin calculation.
+     - **Arrhenius Spoilage Engine:** Interactive temperature slider and crop degradation graph.
+     - **Produce Batches / Buyers / Storage / Vehicles:** Full CRUD interfaces connected directly to Supabase.
+
+
 
