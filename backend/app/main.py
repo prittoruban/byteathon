@@ -934,3 +934,127 @@ async def get_arbitrage_benchmark_scenarios():
         "scenario_b_diversion_not_beneficial": not_beneficial_scenario.model_dump(),
     }
 
+
+# ====================================================================
+# MASTER DASHBOARD INTEGRATION WORKFLOW (STEP 8)
+# ====================================================================
+@app.post(
+    "/api/workflow/simulate-spike-and-resolve",
+    tags=["Master Workflow Integration"],
+)
+async def simulate_spike_and_resolve_workflow(payload: Dict[str, Any]):
+    """
+    Step 8 Master Pipeline:
+    Executes the end-to-end integration loop from simulated temperature spike through:
+    1. Ingestion of in-transit thermal event.
+    2. Real-time Arrhenius deterioration recalculation.
+    3. Dynamic destination re-evaluation and multi-buyer routing.
+    4. Secondary-market quality-penalty arbitrage.
+    5. Optional autonomous database persistence to Supabase.
+    """
+    client = get_supabase_client()
+    shipment_id = payload.get("shipment_id")
+    spiked_temp = float(payload.get("spiked_temp_celsius", 36.5))
+    exposure_hours = float(payload.get("exposure_hours", 4.0))
+    auto_persist = bool(payload.get("auto_persist", False))
+
+    # 1. Fetch active shipment
+    query = (
+        client.table("shipments")
+        .select(
+            "*, produce_batches(id, crop_type, quantity_kg, initial_shelf_life_days, remaining_shelf_life_days), "
+            "transport_vehicles(id, vehicle_number, is_refrigerated, current_temp_celsius, current_humidity_pct, current_latitude, current_longitude, cost_per_km), "
+            "destination_buyer:buyers!shipments_destination_buyer_id_fkey(id, name, type, location, latitude, longitude, offered_price_per_kg, demand_crop, demand_kg)"
+        )
+    )
+
+    if shipment_id:
+        shipment_res = query.eq("id", shipment_id).execute()
+    else:
+        shipment_res = query.eq("status", "in_transit").limit(1).execute()
+
+    if not shipment_res.data:
+        # Fallback to any shipment
+        shipment_res = query.limit(1).execute()
+
+    if not shipment_res.data:
+        raise HTTPException(status_code=404, detail="No active shipment found to simulate")
+
+    shipment = shipment_res.data[0]
+
+    # 2. Spoilage Evaluation via Arrhenius kinetics
+    batch = shipment.get("produce_batches") or {}
+    crop_type = batch.get("crop_type", "Tomato")
+    rem_sl = float(batch.get("remaining_shelf_life_days", 3.0))
+    init_sl = float(batch.get("initial_shelf_life_days", 14.0))
+
+    spoilage_req = SpoilageEvaluationRequest(
+        crop_type=crop_type,
+        remaining_shelf_life_days=rem_sl,
+        initial_shelf_life_days=init_sl,
+        current_temp_celsius=spiked_temp,
+        current_humidity_pct=70.0,
+        exposure_hours=exposure_hours,
+        transit_hours_remaining=float(shipment.get("estimated_transit_hours", 4.0)),
+    )
+    spoilage_res = calculate_spoilage_risk(spoilage_req)
+
+    # 3. Dynamic Rerouting Evaluation
+    buyers_res = client.table("buyers").select("*").execute().data or []
+    telemetry_override = {
+        "current_temp_celsius": spiked_temp,
+        "current_humidity_pct": 70.0,
+        "trigger_reason": f"Active in-transit refrigeration breakdown: {spiked_temp:.1f}°C detected by vehicle sensor",
+    }
+    reroute_res = evaluate_dynamic_reroute(
+        shipment=shipment,
+        candidate_buyers=buyers_res,
+        telemetry_override=telemetry_override,
+    )
+
+    # 4. Secondary Arbitrage Evaluation
+    primary_buyer = shipment.get("destination_buyer") or {}
+    secondary_buyer = None
+    if reroute_res.recommended_destination:
+        secondary_buyer = next(
+            (b for b in buyers_res if str(b["id"]) == str(reroute_res.recommended_destination.buyer_id)),
+            None,
+        )
+    if not secondary_buyer:
+        secondary_buyer = next(
+            (b for b in buyers_res if b.get("type") == "secondary_processor" and crop_type.lower() in b.get("demand_crop", "").lower()),
+            buyers_res[0] if buyers_res else {},
+        )
+
+    arbitrage_res = evaluate_secondary_market_arbitrage(
+        crop_type=crop_type,
+        quantity_kg=float(shipment.get("allocated_quantity_kg", 4000.0)),
+        initial_shelf_life_days=init_sl,
+        remaining_shelf_life_days=rem_sl,
+        current_temp_celsius=spiked_temp,
+        current_humidity_pct=70.0,
+        vehicle_lat=shipment.get("transport_vehicles", {}).get("current_latitude", 19.98) or 19.98,
+        vehicle_lon=shipment.get("transport_vehicles", {}).get("current_longitude", 73.79) or 73.79,
+        primary_buyer=primary_buyer,
+        secondary_buyer=secondary_buyer,
+    )
+
+    # 5. Optional Auto-Persistence to Supabase
+    persisted = False
+    if auto_persist and reroute_res.action_recommended == "EXECUTE_DYNAMIC_REROUTE":
+        try:
+            persist_reroute_to_supabase(client, shipment["id"], reroute_res)
+            persisted = True
+        except Exception as e:
+            print("Auto-persist warning:", e)
+
+    return {
+        "workflow_status": "COMPLETED",
+        "trigger_event": telemetry_override["trigger_reason"],
+        "shipment": shipment,
+        "spoilage_assessment": spoilage_res.model_dump(),
+        "reroute_recommendation": reroute_res.model_dump(),
+        "secondary_arbitrage": arbitrage_res.model_dump(),
+        "persisted_to_database": persisted,
+    }
+

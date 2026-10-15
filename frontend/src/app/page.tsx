@@ -38,6 +38,7 @@ import { UpdateBatchModal } from "@/components/UpdateBatchModal";
 import { SpoilageSimulator } from "@/components/SpoilageSimulator";
 import { DynamicReroutingView } from "@/components/DynamicReroutingView";
 import { SecondaryRecoveryView } from "@/components/SecondaryRecoveryView";
+import { IntegratedMissionControl } from "@/components/IntegratedMissionControl";
 
 interface HealthData {
   status: string;
@@ -209,8 +210,8 @@ export default function Dashboard() {
   const [cropFilter, setCropFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<
-    "distribution" | "rerouting" | "secondary" | "spoilage" | "batches" | "buyers" | "storage" | "vehicles"
-  >("distribution");
+    "overview" | "distribution" | "rerouting" | "secondary" | "spoilage" | "batches" | "buyers" | "storage" | "vehicles"
+  >("overview");
 
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
@@ -301,7 +302,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-3">
           <span className="text-emerald-400">Codename: HARVEST ZERO</span>
           <span className="bg-emerald-800/80 text-emerald-200 px-2 py-0.5 rounded text-[11px] font-medium border border-emerald-700/50">
-            Step 4: Distribution Engine Active
+            Step 8: Integrated Mission Control Live
           </span>
         </div>
       </div>
@@ -319,7 +320,7 @@ export default function Dashboard() {
                   HARVEST ZERO
                 </span>
                 <span className="text-[10px] font-mono uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-semibold px-2 py-0.5 rounded">
-                  Distribution Engine
+                  Mission Control
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
@@ -491,6 +492,11 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             {[
               {
+                id: "overview",
+                label: "Mission Control (Overview)",
+                icon: Activity,
+              },
+              {
                 id: "distribution",
                 label: `Distribution Engine (${distributionPlan?.recommendations.length ?? 0})`,
                 icon: Route,
@@ -579,6 +585,13 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* TAB: MISSION CONTROL OVERVIEW (STEP 8) */}
+        {activeTab === "overview" && (
+          <IntegratedMissionControl
+            onNavigateToTab={(tab) => setActiveTab(tab as typeof activeTab)}
+          />
+        )}
 
         {/* TAB: DYNAMIC REROUTING (STEP 6) */}
         {activeTab === "rerouting" && <DynamicReroutingView />}

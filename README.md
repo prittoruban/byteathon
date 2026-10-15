@@ -183,3 +183,21 @@ $$\alpha(T) = \frac{k(T)}{k_{\text{ref}}}$$
 3. **Economic Margin Arbitrage:** Compares original vs diverted net margin ($(\text{kg} \times \text{price}) - \text{freight}$) and salvages cargo value before biological write-off.
 4. **Database Audit Persistence:** Records full explainable rationale and switches active route in Supabase PostgreSQL.
 
+---
+
+## 11. Step 8 — Integrated Mission Control (End-to-End Orchestration)
+
+- `POST /api/workflow/simulate-spike-and-resolve` — One-click automated loop executing all subsystems sequentially:
+  1. In-transit cargo telemetry ingestion and ambient temperature spike ($+26^\circ\text{C}$).
+  2. Arrhenius degradation recalculation ($\alpha(T)$ acceleration & remaining shelf life depletion).
+  3. Dynamic rerouting viability test (identifies primary buyer rejection risk).
+  4. Secondary-market arbitrage analysis (computes optimal processor off-take and net salvage delta).
+  5. Actionable recommendation payload with one-click Supabase persistence.
+- **Frontend Dashboard (`IntegratedMissionControl.tsx`):**
+  - Live system health, active produce volume, vehicle status, and Supabase round-trip latency.
+  - Interactive "Simulate Temperature Spike (+26°C)" trigger demonstrating the entire intelligent cold-chain decision loop in real time.
+  - Side-by-side comparative route visualization (Original Destination vs Diverted Recovery Facility).
+  - Clear financial audit strip showing exact value salvaged ($₹\text{ net delta}$) and carbon waste prevented.
+  - Seamless navigation links to dive into dedicated subsystems (Distribution Engine, Dynamic Rerouting, Secondary Arbitrage, Spoilage Simulator).
+
+
