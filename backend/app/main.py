@@ -13,6 +13,20 @@ from backend.app.models import (
     TransportVehicleCreate,
     ShipmentCreate,
 )
+from backend.app.distribution_engine import (
+    optimize_distribution_plan,
+    DistributionPlan,
+)
+from backend.app.spoilage_engine import (
+    CROP_KINETIC_DATABASE,
+    DEFAULT_KINETIC_PROFILE,
+    SpoilageEvaluationRequest,
+    SpoilageRiskAssessment,
+    TemperatureSpikeSimulationRequest,
+    calculate_spoilage_risk,
+    simulate_temperature_spike,
+    get_crop_kinetics,
+)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -394,3 +408,183 @@ async def create_shipment(payload: ShipmentCreate):
     if not res.data:
         raise HTTPException(status_code=400, detail="Failed to create shipment record")
     return res.data[0]
+
+
+# ====================================================================
+# DISTRIBUTION ENGINE RECOMMENDATION API (STEP 4)
+# ====================================================================
+@app.get(
+    "/api/distribution/recommend",
+    tags=["Distribution Engine"],
+    response_model=DistributionPlan,
+)
+async def get_distribution_recommendation():
+    """
+    Evaluates active produce batches, buyer demands, vehicle capacities,
+    and storage constraints to generate an optimal, explainable distribution plan.
+    """
+    client = get_supabase_client()
+    batches = (
+        client.table("produce_batches")
+        .select("*, farmers(name, location, latitude, longitude)")
+        .execute()
+        .data
+        or []
+    )
+    buyers = client.table("buyers").select("*").execute().data or []
+    vehicles = client.table("transport_vehicles").select("*").execute().data or []
+    storages = client.table("storage_facilities").select("*").execute().data or []
+
+    # Filter to active batches ready for dispatch or in buffer storage
+    active_batches = [
+        b for b in batches if b.get("status") in ["harvested", "in_storage"]
+    ]
+
+    plan = optimize_distribution_plan(
+        batches=active_batches,
+        buyers=buyers,
+        vehicles=vehicles,
+        storage_facilities=storages,
+    )
+    return plan
+
+
+@app.post(
+    "/api/distribution/simulate",
+    tags=["Distribution Engine"],
+    response_model=DistributionPlan,
+)
+async def simulate_distribution_scenario(payload: Dict[str, Any]):
+    """
+    Runs the distribution optimization engine on an explicit scenario payload.
+    Used for automated scenario testing and hackathon judging verification.
+    """
+    batches = payload.get("batches", [])
+    buyers = payload.get("buyers", [])
+    vehicles = payload.get("vehicles", [])
+    storages = payload.get("storage_facilities", [])
+
+    plan = optimize_distribution_plan(
+        batches=batches,
+        buyers=buyers,
+        vehicles=vehicles,
+        storage_facilities=storages,
+    )
+    return plan
+
+
+# ====================================================================
+# SPOILAGE-RISK ENGINE (STEP 5)
+# ====================================================================
+@app.get(
+    "/api/spoilage/crops",
+    tags=["Spoilage Engine"],
+    response_model=List[Dict[str, Any]],
+)
+async def get_supported_crop_kinetics():
+    """
+    Returns calibrated Arrhenius degradation kinetic parameters, optimal temperatures,
+    and literature citations for supported agricultural commodities.
+    """
+    results = []
+    for crop_key, params in CROP_KINETIC_DATABASE.items():
+        results.append({
+            "key": crop_key,
+            "crop_name": params.crop_name,
+            "optimal_temp_celsius": params.optimal_temp_celsius,
+            "reference_temp_celsius": params.reference_temp_celsius,
+            "activation_energy_j_mol": params.activation_energy_j_mol,
+            "activation_energy_kj_mol": round(params.activation_energy_j_mol / 1000.0, 1),
+            "base_decay_rate_per_day": params.base_decay_rate_per_day,
+            "optimal_humidity_min": params.optimal_humidity_min,
+            "optimal_humidity_max": params.optimal_humidity_max,
+            "chilling_injury_threshold_celsius": params.chilling_injury_threshold_celsius,
+            "typical_shelf_life_days": params.typical_shelf_life_days,
+            "literature_source": params.literature_source,
+        })
+    return results
+
+
+@app.post(
+    "/api/spoilage/evaluate",
+    tags=["Spoilage Engine"],
+    response_model=SpoilageRiskAssessment,
+)
+async def evaluate_spoilage_risk(payload: SpoilageEvaluationRequest):
+    """
+    Evaluates real-time biological deterioration and Arrhenius degradation rate
+    for a produce consignment under specified environmental telemetry.
+    """
+    return calculate_spoilage_risk(payload)
+
+
+@app.post(
+    "/api/spoilage/simulate-temperature-spike",
+    tags=["Spoilage Engine"],
+    response_model=Dict[str, Any],
+)
+async def simulate_spoilage_temperature_spike(payload: TemperatureSpikeSimulationRequest):
+    """
+    Simulates refrigeration failure (thermal spike), demonstrating non-linear
+    Arrhenius acceleration compared against baseline cold-chain logistics.
+    """
+    return simulate_temperature_spike(payload)
+
+
+@app.get(
+    "/api/spoilage/live-assessments",
+    tags=["Spoilage Engine"],
+    response_model=List[Dict[str, Any]],
+)
+async def get_live_inventory_spoilage_assessments():
+    """
+    Evaluates real-time Arrhenius deterioration across all active batches in Supabase,
+    applying ambient vs storage facility micro-climates.
+    """
+    client = get_supabase_client()
+    batches = (
+        client.table("produce_batches")
+        .select("*, farmers(name, location, storage_type)")
+        .execute()
+        .data
+        or []
+    )
+
+    assessments = []
+    for b in batches:
+        crop = b.get("crop_type", "Generic")
+        remaining_sl = float(b.get("remaining_shelf_life_days", 5.0))
+        initial_sl = float(b.get("initial_shelf_life_days", 14.0))
+        cond = b.get("storage_condition", "ambient_heap")
+
+        # Map micro-climate environmental conditions
+        if cond == "cold_storage":
+            temp = 4.0
+            humidity = 90.0
+        elif cond == "ventilated_shed":
+            temp = 22.0
+            humidity = 70.0
+        else:  # ambient heap
+            temp = 32.0
+            humidity = 60.0
+
+        req = SpoilageEvaluationRequest(
+            crop_type=crop,
+            remaining_shelf_life_days=remaining_sl,
+            initial_shelf_life_days=initial_sl,
+            current_temp_celsius=temp,
+            current_humidity_pct=humidity,
+            exposure_hours=6.0,
+        )
+        assessment = calculate_spoilage_risk(req)
+        assessments.append({
+            "batch_id": b.get("id"),
+            "crop_type": crop,
+            "quantity_kg": b.get("quantity_kg"),
+            "storage_condition": cond,
+            "farmer_name": b.get("farmers", {}).get("name", "Unknown"),
+            "assessment": assessment.model_dump(),
+        })
+
+    return assessments
+

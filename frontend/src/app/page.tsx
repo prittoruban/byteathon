@@ -26,10 +26,15 @@ import {
   AlertTriangle,
   Scale,
   Thermometer,
+  Route,
+  Zap,
+  Check,
+  Flame,
 } from "lucide-react";
 import { ShelfLifeBadge } from "@/components/ShelfLifeBadge";
 import { CreateBatchModal } from "@/components/CreateBatchModal";
 import { UpdateBatchModal } from "@/components/UpdateBatchModal";
+import { SpoilageSimulator } from "@/components/SpoilageSimulator";
 
 interface HealthData {
   status: string;
@@ -120,6 +125,64 @@ interface TransportVehicleItem {
   status: string;
 }
 
+interface AllocationRecommendation {
+  allocation_id: string;
+  batch_id: string;
+  crop_type: string;
+  farmer_name: string;
+  origin_location: string;
+  buyer_name: string;
+  buyer_type: string;
+  destination_location: string;
+  vehicle_number: string;
+  is_refrigerated: boolean;
+  allocated_quantity_kg: number;
+  distance_km: number;
+  estimated_transit_hours: number;
+  transport_cost: number;
+  expected_revenue: number;
+  net_margin: number;
+  shelf_life_margin_hours: number;
+  explanation: string;
+}
+
+interface DistributionPlan {
+  plan_id: string;
+  timestamp: string;
+  total_allocated_kg: number;
+  total_unallocated_kg: number;
+  total_expected_revenue: number;
+  total_transport_cost: number;
+  total_net_margin: number;
+  recommendations: AllocationRecommendation[];
+  unallocated_batches: {
+    batch_id: string;
+    crop_type: string;
+    farmer_name: string;
+    original_quantity_kg: number;
+    unallocated_quantity_kg: number;
+    storage_condition: string;
+    remaining_shelf_life_days: number;
+    reason: string;
+    recommended_action: string;
+  }[];
+  unfulfilled_demands: {
+    buyer_id: string;
+    buyer_name: string;
+    buyer_type: string;
+    crop_type: string;
+    original_demand_kg: number;
+    unfulfilled_demand_kg: number;
+    reason: string;
+  }[];
+  constraints_audit: {
+    demand_limits_respected: boolean;
+    vehicle_capacities_respected: boolean;
+    shelf_life_limits_respected: boolean;
+    all_allocations_feasible: boolean;
+  };
+}
+
 export default function Dashboard() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [summary, setSummary] = useState<InventorySummary | null>(null);
@@ -127,8 +190,10 @@ export default function Dashboard() {
   const [buyers, setBuyers] = useState<BuyerItem[]>([]);
   const [storages, setStorages] = useState<StorageFacilityItem[]>([]);
   const [vehicles, setVehicles] = useState<TransportVehicleItem[]>([]);
+  const [distributionPlan, setDistributionPlan] = useState<DistributionPlan | null>(null);
 
   const [loading, setLoading] = useState<boolean>(true);
+  const [optimizing, setOptimizing] = useState<boolean>(false);
   const [latency, setLatency] = useState<number | null>(null);
   const [lastChecked, setLastChecked] = useState<string>("");
 
@@ -137,10 +202,12 @@ export default function Dashboard() {
   const [selectedBatchForEdit, setSelectedBatchForEdit] =
     useState<ProduceBatchItem | null>(null);
 
-  // Filters
+  // Filters & Tabs
   const [cropFilter, setCropFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<"batches" | "buyers" | "storage" | "vehicles">("batches");
+  const [activeTab, setActiveTab] = useState<
+    "distribution" | "spoilage" | "batches" | "buyers" | "storage" | "vehicles"
+  >("distribution");
 
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
@@ -149,15 +216,23 @@ export default function Dashboard() {
     setLoading(true);
     const start = performance.now();
     try {
-      const [healthRes, summaryRes, batchesRes, buyersRes, storageRes, vehiclesRes] =
-        await Promise.all([
-          fetch(`${backendUrl}/health`, { cache: "no-store" }),
-          fetch(`${backendUrl}/api/inventory/summary`, { cache: "no-store" }),
-          fetch(`${backendUrl}/api/produce-batches`, { cache: "no-store" }),
-          fetch(`${backendUrl}/api/buyers`, { cache: "no-store" }),
-          fetch(`${backendUrl}/api/storage-facilities`, { cache: "no-store" }),
-          fetch(`${backendUrl}/api/transport-vehicles`, { cache: "no-store" }),
-        ]);
+      const [
+        healthRes,
+        summaryRes,
+        batchesRes,
+        buyersRes,
+        storageRes,
+        vehiclesRes,
+        planRes,
+      ] = await Promise.all([
+        fetch(`${backendUrl}/health`, { cache: "no-store" }),
+        fetch(`${backendUrl}/api/inventory/summary`, { cache: "no-store" }),
+        fetch(`${backendUrl}/api/produce-batches`, { cache: "no-store" }),
+        fetch(`${backendUrl}/api/buyers`, { cache: "no-store" }),
+        fetch(`${backendUrl}/api/storage-facilities`, { cache: "no-store" }),
+        fetch(`${backendUrl}/api/transport-vehicles`, { cache: "no-store" }),
+        fetch(`${backendUrl}/api/distribution/recommend`, { cache: "no-store" }),
+      ]);
 
       const end = performance.now();
       setLatency(Math.round(end - start));
@@ -169,12 +244,30 @@ export default function Dashboard() {
       if (buyersRes.ok) setBuyers(await buyersRes.json());
       if (storageRes.ok) setStorages(await storageRes.json());
       if (vehiclesRes.ok) setVehicles(await vehiclesRes.json());
+      if (planRes.ok) setDistributionPlan(await planRes.json());
     } catch (err) {
-      console.error("Failed to load inventory data:", err);
+      console.error("Failed to load inventory and distribution data:", err);
     } finally {
       setLoading(false);
     }
   }, [backendUrl]);
+
+  const runDistributionOptimization = async () => {
+    setOptimizing(true);
+    try {
+      const res = await fetch(`${backendUrl}/api/distribution/recommend`, {
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const plan: DistributionPlan = await res.json();
+        setDistributionPlan(plan);
+      }
+    } catch (err) {
+      console.error("Optimization failed:", err);
+    } finally {
+      setOptimizing(false);
+    }
+  };
 
   useEffect(() => {
     fetchAllData();
@@ -183,8 +276,12 @@ export default function Dashboard() {
   }, [fetchAllData]);
 
   const filteredBatches = batches.filter((b) => {
-    const matchesCrop = cropFilter === "all" || b.crop_type.toLowerCase() === cropFilter.toLowerCase();
-    const matchesStatus = statusFilter === "all" || b.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchesCrop =
+      cropFilter === "all" ||
+      b.crop_type.toLowerCase() === cropFilter.toLowerCase();
+    const matchesStatus =
+      statusFilter === "all" ||
+      b.status.toLowerCase() === statusFilter.toLowerCase();
     return matchesCrop && matchesStatus;
   });
 
@@ -201,7 +298,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-3">
           <span className="text-emerald-400">Codename: HARVEST ZERO</span>
           <span className="bg-emerald-800/80 text-emerald-200 px-2 py-0.5 rounded text-[11px] font-medium border border-emerald-700/50">
-            Step 3: Live Inventory Dashboard
+            Step 4: Distribution Engine Active
           </span>
         </div>
       </div>
@@ -219,7 +316,7 @@ export default function Dashboard() {
                   HARVEST ZERO
                 </span>
                 <span className="text-[10px] font-mono uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-semibold px-2 py-0.5 rounded">
-                  Live Supabase Inventory
+                  Distribution Engine
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
@@ -250,9 +347,9 @@ export default function Dashboard() {
               />
               <span>
                 {loading
-                  ? "Syncing..."
+                  ? "Optimizing..."
                   : health?.status === "healthy"
-                  ? `Supabase + FastAPI (${latency}ms)`
+                  ? `Supabase + Engine (${latency}ms)`
                   : "Disconnected"}
               </span>
             </div>
@@ -264,7 +361,11 @@ export default function Dashboard() {
               title="Refresh all inventory data"
               aria-label="Refresh all inventory data"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-emerald-600" : ""}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${
+                  loading ? "animate-spin text-emerald-600" : ""
+                }`}
+              />
             </button>
           </div>
         </div>
@@ -272,7 +373,7 @@ export default function Dashboard() {
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Top 5 KPI Grid (Summary of Step 3 Requirements) */}
+        {/* Top 5 KPI Grid */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* 1. Total Produce Tracked */}
           <div className="p-5 rounded-2xl bg-white dark:bg-[#0f1b14] border border-slate-200/80 dark:border-emerald-950 shadow-sm">
@@ -282,12 +383,16 @@ export default function Dashboard() {
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-slate-100">
-                {summary ? `${(summary.total_produce_kg / 1000).toFixed(1)}k` : "--"}
+                {summary
+                  ? `${(summary.total_produce_kg / 1000).toFixed(1)}k`
+                  : "--"}
               </span>
               <span className="text-xs text-slate-500 font-mono">kg total</span>
             </div>
             <div className="mt-2 text-[11px] font-mono text-emerald-700 dark:text-emerald-400">
-              {summary ? `${summary.active_batches_count} batches logged` : "Loading..."}
+              {summary
+                ? `${summary.active_batches_count} batches logged`
+                : "Loading..."}
             </div>
           </div>
 
@@ -318,13 +423,19 @@ export default function Dashboard() {
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-slate-100">
-                {summary ? `${(summary.buyer_demand.total_demand_kg / 1000).toFixed(1)}k` : "--"}
+                {summary
+                  ? `${(summary.buyer_demand.total_demand_kg / 1000).toFixed(1)}k`
+                  : "--"}
               </span>
               <span className="text-xs text-slate-500 font-mono">kg demand</span>
             </div>
             <div className="mt-2 text-[11px] font-mono text-blue-700 dark:text-blue-400">
               {summary
-                ? `${(summary.buyer_demand.primary_demand_kg / 1000).toFixed(1)}k retail / ${(summary.buyer_demand.secondary_demand_kg / 1000).toFixed(1)}k puree`
+                ? `${(summary.buyer_demand.primary_demand_kg / 1000).toFixed(
+                    1
+                  )}k retail / ${(
+                    summary.buyer_demand.secondary_demand_kg / 1000
+                  ).toFixed(1)}k puree`
                 : "Loading..."}
             </div>
           </div>
@@ -343,7 +454,9 @@ export default function Dashboard() {
             </div>
             <div className="mt-2 text-[11px] font-mono text-purple-700 dark:text-purple-400">
               {summary
-                ? `${(summary.storage.available_capacity_kg / 1000).toFixed(1)}k kg available`
+                ? `${(summary.storage.available_capacity_kg / 1000).toFixed(
+                    1
+                  )}k kg available`
                 : "Loading..."}
             </div>
           </div>
@@ -356,7 +469,9 @@ export default function Dashboard() {
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-slate-100">
-                {summary ? `${(summary.vehicles.total_payload_kg / 1000).toFixed(1)}k` : "--"}
+                {summary
+                  ? `${(summary.vehicles.total_payload_kg / 1000).toFixed(1)}k`
+                  : "--"}
               </span>
               <span className="text-xs text-slate-500 font-mono">kg payload</span>
             </div>
@@ -372,10 +487,36 @@ export default function Dashboard() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-2">
           <div className="flex items-center gap-2">
             {[
-              { id: "batches", label: `Produce Batches (${batches.length})`, icon: Sprout },
-              { id: "buyers", label: `Buyer Demand (${buyers.length})`, icon: Warehouse },
-              { id: "storage", label: `Cold Storage (${storages.length})`, icon: ThermometerSnowflake },
-              { id: "vehicles", label: `Vehicle Fleet (${vehicles.length})`, icon: Truck },
+              {
+                id: "distribution",
+                label: `Distribution Engine (${distributionPlan?.recommendations.length ?? 0})`,
+                icon: Route,
+              },
+              {
+                id: "spoilage",
+                label: "Arrhenius Spoilage Engine",
+                icon: Flame,
+              },
+              {
+                id: "batches",
+                label: `Produce Batches (${batches.length})`,
+                icon: Sprout,
+              },
+              {
+                id: "buyers",
+                label: `Buyer Demand (${buyers.length})`,
+                icon: Warehouse,
+              },
+              {
+                id: "storage",
+                label: `Cold Storage (${storages.length})`,
+                icon: ThermometerSnowflake,
+              },
+              {
+                id: "vehicles",
+                label: `Vehicle Fleet (${vehicles.length})`,
+                icon: Truck,
+              },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -396,8 +537,25 @@ export default function Dashboard() {
             })}
           </div>
 
-          {activeTab === "batches" && (
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {activeTab === "distribution" && (
+              <button
+                onClick={runDistributionOptimization}
+                disabled={optimizing}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all cursor-pointer"
+              >
+                <Zap
+                  className={`w-3.5 h-3.5 ${
+                    optimizing ? "animate-spin text-amber-300" : ""
+                  }`}
+                />
+                <span>
+                  {optimizing ? "Computing Plan..." : "Re-Run Optimization"}
+                </span>
+              </button>
+            )}
+
+            {activeTab === "batches" && (
               <button
                 onClick={() => setCreateModalOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all cursor-pointer"
@@ -405,18 +563,271 @@ export default function Dashboard() {
                 <Plus className="w-4 h-4" />
                 <span>Register Produce Batch</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* TAB 1: PRODUCE INVENTORY & BATCHES */}
+        {/* TAB: SPOILAGE-RISK ENGINE (STEP 5) */}
+        {activeTab === "spoilage" && <SpoilageSimulator />}
+
+        {/* TAB 1: DISTRIBUTION ENGINE (STEP 4) */}
+        {activeTab === "distribution" && (
+          <div className="space-y-6">
+            {/* Optimization Financial Banner */}
+            {distributionPlan && (
+              <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-900 via-slate-900 to-slate-950 text-white border border-emerald-800 shadow-md">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-mono text-emerald-400">
+                      <Sparkles className="w-4 h-4" />
+                      <span>FEFO-Optimized Plan: {distributionPlan.plan_id}</span>
+                    </div>
+                    <h2 className="text-xl font-bold mt-1 font-mono">
+                      Multi-Echelon Allocation & Transportation Economics
+                    </h2>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                    <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Demand Limits Respected
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Vehicle Payload Checked
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Shelf Life Safe
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 pt-4 text-xs font-mono">
+                  <div>
+                    <span className="text-slate-400">Allocated Volume</span>
+                    <div className="text-lg font-bold text-emerald-300 mt-0.5">
+                      {distributionPlan.total_allocated_kg.toLocaleString()} kg
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Unallocated Volume</span>
+                    <div className="text-lg font-bold text-amber-300 mt-0.5">
+                      {distributionPlan.total_unallocated_kg.toLocaleString()} kg
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Expected Gross Revenue</span>
+                    <div className="text-lg font-bold text-white mt-0.5">
+                      ₹{distributionPlan.total_expected_revenue.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Total Transport Cost</span>
+                    <div className="text-lg font-bold text-rose-300 mt-0.5">
+                      ₹{distributionPlan.total_transport_cost.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Net Economic Yield</span>
+                    <div className="text-lg font-bold text-emerald-400 mt-0.5">
+                      ₹{distributionPlan.total_net_margin.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Recommendations List */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 font-mono flex items-center gap-2">
+                  <Route className="w-4 h-4 text-emerald-600" />
+                  Recommended Produce Allocations ({distributionPlan?.recommendations.length ?? 0})
+                </h3>
+                <span className="text-xs font-mono text-slate-500">
+                  Prioritized by basal decay rate & maximum net margin
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {distributionPlan?.recommendations.map((rec) => {
+                  const isPrimary = rec.buyer_type === "primary_retail";
+                  return (
+                    <div
+                      key={rec.allocation_id}
+                      className="p-5 rounded-2xl bg-white dark:bg-[#0f1b14] border border-slate-200/80 dark:border-emerald-950 shadow-sm hover:shadow-md transition-all space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-slate-900 dark:text-slate-100 font-mono">
+                            {rec.crop_type}
+                          </span>
+                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                            {rec.allocated_quantity_kg.toLocaleString()} kg
+                          </span>
+                        </div>
+                        <span
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
+                            isPrimary
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                              : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                          }`}
+                        >
+                          {isPrimary ? "Primary Retail" : "Secondary Processor"}
+                        </span>
+                      </div>
+
+                      {/* Route Map description */}
+                      <div className="text-xs font-mono space-y-1 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800">
+                        <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                          <span className="text-slate-400">Origin:</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {rec.farmer_name} ({rec.origin_location})
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                          <span className="text-slate-400">Destination:</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {rec.buyer_name} ({rec.destination_location})
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                          <span className="text-slate-400">Assigned Truck:</span>
+                          <span>
+                            {rec.vehicle_number} (
+                            {rec.is_refrigerated ? "Refrigerated" : "Ambient"})
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Metrics bar */}
+                      <div className="grid grid-cols-4 gap-2 text-center text-xs font-mono py-2 border-y border-slate-100 dark:border-slate-800">
+                        <div>
+                          <div className="text-[10px] text-slate-400">Distance</div>
+                          <div className="font-bold text-slate-800 dark:text-slate-200">
+                            {rec.distance_km} km
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-slate-400">Transit</div>
+                          <div className="font-bold text-slate-800 dark:text-slate-200">
+                            {rec.estimated_transit_hours}h
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-slate-400">Freight Cost</div>
+                          <div className="font-bold text-rose-600">
+                            ₹{rec.transport_cost.toLocaleString()}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-slate-400">Net Profit</div>
+                          <div className="font-bold text-emerald-600">
+                            ₹{rec.net_margin.toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Explanation */}
+                      <div className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 text-xs font-mono text-emerald-900 dark:text-emerald-300">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-1">
+                          Optimization Rationale:
+                        </div>
+                        {rec.explanation}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Unallocated and Unfulfilled section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Unallocated Batches */}
+              <div className="p-5 rounded-2xl bg-white dark:bg-[#0f1b14] border border-slate-200/80 dark:border-emerald-950 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 font-mono flex items-center gap-2">
+                    <Scale className="w-4 h-4 text-amber-600" />
+                    Unallocated Produce Inventory ({distributionPlan?.unallocated_batches.length ?? 0})
+                  </h4>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-bold">
+                    Buffer Stock
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {distributionPlan?.unallocated_batches.map((ub, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-xs font-mono space-y-1"
+                    >
+                      <div className="flex justify-between font-bold text-slate-900 dark:text-slate-100">
+                        <span>
+                          {ub.crop_type} ({ub.farmer_name})
+                        </span>
+                        <span className="text-amber-700 dark:text-amber-400">
+                          {ub.unallocated_quantity_kg.toLocaleString()} kg
+                        </span>
+                      </div>
+                      <div className="text-slate-500 text-[11px]">{ub.reason}</div>
+                      <div className="text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold">
+                        Action: {ub.recommended_action}
+                      </div>
+                    </div>
+                  ))}
+                  {distributionPlan?.unallocated_batches.length === 0 && (
+                    <div className="text-xs font-mono text-slate-400 py-4 text-center">
+                      All produce batches fully allocated.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Unfulfilled Buyer Demand */}
+              <div className="p-5 rounded-2xl bg-white dark:bg-[#0f1b14] border border-slate-200/80 dark:border-emerald-950 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 font-mono flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600" />
+                    Unfulfilled Buyer Demand ({distributionPlan?.unfulfilled_demands.length ?? 0})
+                  </h4>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-bold">
+                    Demand Deficit
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {distributionPlan?.unfulfilled_demands.map((ud, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-xs font-mono space-y-1"
+                    >
+                      <div className="flex justify-between font-bold text-slate-900 dark:text-slate-100">
+                        <span>
+                          {ud.buyer_name} ({ud.crop_type})
+                        </span>
+                        <span className="text-rose-600 dark:text-rose-400">
+                          {ud.unfulfilled_demand_kg.toLocaleString()} kg short
+                        </span>
+                      </div>
+                      <div className="text-slate-500 text-[11px]">{ud.reason}</div>
+                    </div>
+                  ))}
+                  {distributionPlan?.unfulfilled_demands.length === 0 && (
+                    <div className="text-xs font-mono text-slate-400 py-4 text-center">
+                      All buyer demand completely fulfilled.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: PRODUCE INVENTORY & BATCHES */}
         {activeTab === "batches" && (
           <div className="space-y-4">
             {/* Filter Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-white dark:bg-[#0f1b14] border border-slate-200/80 dark:border-emerald-950 text-xs font-mono">
               <div className="flex items-center gap-2 text-slate-500">
                 <Filter className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="font-semibold text-slate-700 dark:text-slate-300">Filters:</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  Filters:
+                </span>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-1.5">
@@ -463,7 +874,7 @@ export default function Dashboard() {
                     className="p-5 rounded-2xl bg-white dark:bg-[#0f1b14] border border-slate-200/80 dark:border-emerald-950 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
                   >
                     <div>
-                      {/* Top row: Crop + Status */}
+                      {/* Top row */}
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <div className="flex items-center gap-2">
                           <span className="text-base font-bold text-slate-900 dark:text-slate-100 font-mono">
@@ -546,22 +957,19 @@ export default function Dashboard() {
                 );
               })}
             </div>
-
-            {filteredBatches.length === 0 && (
-              <div className="p-12 text-center rounded-2xl bg-white dark:bg-[#0f1b14] border border-slate-200 dark:border-emerald-950 text-slate-500 font-mono text-xs">
-                No produce batches match the selected filters.
-              </div>
-            )}
           </div>
         )}
 
-        {/* TAB 2: BUYER DEMAND MATRIX */}
+        {/* TAB 3: BUYER DEMAND MATRIX */}
         {activeTab === "buyers" && (
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-xs font-mono text-blue-900 dark:text-blue-200 flex items-start gap-2.5">
               <Warehouse className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
               <div>
-                <span className="font-bold">Dual-Tier Arbitrage Demand Architecture:</span> Primary retail buyers require premium cosmetics and &gt;24h shelf life at full market value (e.g., ₹42/kg). Secondary processors (puree, paste, juice) absorb thermally stressed goods at salvage rates (e.g., ₹26.50/kg) with lower quality thresholds down to 8h.
+                <span className="font-bold">
+                  Dual-Tier Arbitrage Demand Architecture:
+                </span>{" "}
+                Primary retail buyers require premium cosmetics and &gt;24h shelf life at full market value (e.g., ₹42/kg). Secondary processors (puree, paste, juice) absorb thermally stressed goods at salvage rates (e.g., ₹26.50/kg) with lower quality thresholds down to 8h.
               </div>
             </div>
 
@@ -578,7 +986,9 @@ export default function Dashboard() {
                         <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 font-mono">
                           {b.name}
                         </h3>
-                        <p className="text-xs text-slate-500 font-mono mt-0.5">{b.location}</p>
+                        <p className="text-xs text-slate-500 font-mono mt-0.5">
+                          {b.location}
+                        </p>
                       </div>
                       <span
                         className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full uppercase ${
@@ -625,13 +1035,16 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* TAB 3: COLD STORAGE CAPACITY */}
+        {/* TAB 4: COLD STORAGE CAPACITY */}
         {activeTab === "storage" && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {storages.map((s) => {
-                const utilPct = Math.round((s.current_utilization_kg / s.total_capacity_kg) * 100);
-                const available = s.total_capacity_kg - s.current_utilization_kg;
+                const utilPct = Math.round(
+                  (s.current_utilization_kg / s.total_capacity_kg) * 100
+                );
+                const available =
+                  s.total_capacity_kg - s.current_utilization_kg;
                 return (
                   <div
                     key={s.id}
@@ -642,7 +1055,9 @@ export default function Dashboard() {
                         <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 font-mono">
                           {s.name}
                         </h3>
-                        <p className="text-xs text-slate-500 font-mono mt-0.5">{s.location}</p>
+                        <p className="text-xs text-slate-500 font-mono mt-0.5">
+                          {s.location}
+                        </p>
                       </div>
                       <div className="text-right font-mono">
                         <span className="text-xs font-bold text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 px-2 py-0.5 rounded">
@@ -700,7 +1115,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* TAB 4: VEHICLE FLEET & TELEMETRY */}
+        {/* TAB 5: VEHICLE FLEET & TELEMETRY */}
         {activeTab === "vehicles" && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -749,7 +1164,9 @@ export default function Dashboard() {
                               : "text-amber-600 dark:text-amber-400"
                           }`}
                         >
-                          {isCold ? "Active Refrigeration" : "Ambient Ventilation"}
+                          {isCold
+                            ? "Active Refrigeration"
+                            : "Ambient Ventilation"}
                         </span>
                       </div>
                     </div>

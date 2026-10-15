@@ -108,7 +108,7 @@ SUCCESS: Full Read & Write Verification Passed for all 6 tables!
 ```bash
 PYTHONPATH=. backend/venv/bin/pytest backend/tests/ -v
 ```
-All 8 test cases verify health, database connection, reading from all 6 endpoints, batch lifecycle (create, update, delete), and inventory summary metrics.
+All 16 test cases verify health, database connection, reading from all 6 endpoints, batch lifecycle, Step 4 distribution constraints, and Step 5 Arrhenius biological degradation kinetics.
 
 ---
 
@@ -122,4 +122,32 @@ All 8 test cases verify health, database connection, reading from all 6 endpoint
 - `GET /api/buyers` — Primary retail and secondary processor demand matrix.
 - `GET /api/storage-facilities` — Cold storage capacity, temperature, and humidity telemetry.
 - `GET /api/transport-vehicles` — Fleet payload, refrigeration specs, and real-time sensor metrics.
+
+---
+
+## 7. Step 4 — Distribution Engine (FEFO + Multi-Constraint Matching)
+
+- `GET /api/distribution/recommend` — Autonomously matches inventory produce batches with buyer demand and available logistics fleet.
+- `POST /api/distribution/simulate` — Runs custom simulation scenarios with injected batches, buyers, and vehicles.
+
+### Key Logic & Constraints:
+1. **First-Expired-First-Out (FEFO) Micro-Climate Prioritization:** Batches stored in `ambient_heap` or with lower remaining shelf life are prioritized first for immediate dispatch before cold-stored goods.
+2. **Shelf-Life Safety Threshold:** Ensures $\text{remaining\_shelf\_life} \ge \text{transit\_days} + \text{buyer\_buffer\_days}$.
+3. **Vehicle Capacity & Demand Caps:** Strict constraint checking guarantees payload limits and buyer crop requirements are never exceeded.
+4. **Economic Margin Optimization:** Calculates gross revenue minus transit freight costs ($\text{base freight} + \text{₹/km} \times \text{distance}$) and provides transparent decision rationales.
+
+---
+
+## 8. Step 5 — Spoilage-Risk Engine (Arrhenius Biological Kinetics)
+
+- `GET /api/spoilage/crops` — Empirical crop kinetics database ($E_a$, $T_{\text{ref}}$, $k_{\text{ref}}$, optimal moisture bounds).
+- `POST /api/spoilage/evaluate` — Evaluates real-time biological deterioration and Arrhenius acceleration rate for any crop under ambient or vehicle telemetry.
+- `POST /api/spoilage/simulate-temperature-spike` — Simulates active refrigeration failure (thermal spike), comparing baseline cold chain against elevated thermal stress.
+- `GET /api/spoilage/live-assessments` — Evaluates dynamic Arrhenius decay across all active batches in Supabase.
+
+### Arrhenius Kinetic Formulation:
+$$k(T) = k_{\text{ref}} \cdot \exp\left(-\frac{E_a}{R} \left(\frac{1}{T} - \frac{1}{T_{\text{ref}}}\right)\right)$$
+$$\alpha(T) = \frac{k(T)}{k_{\text{ref}}}$$
+- **Demonstration Assumptions:** Reactions are modeled under pseudo-first-order degradation kinetics. Crop kinetic parameters ($E_a$, $T_{\text{ref}}$, $k_{\text{ref}}$) are calibrated from USDA Agricultural Handbook 66 and published post-harvest literature.
+- **Thermal Sensitivity:** High activation energy crops (e.g. Mango at $68\text{ kJ/mol}$, Tomato at $58\text{ kJ/mol}$) accelerate decay exponentially ($>7\times$ at $36^\circ\text{C}$), triggering dynamic rerouting flags before cargo write-off occurs.
 
