@@ -18,7 +18,6 @@ import {
   Zap,
   Save,
   RotateCcw,
-  Sparkles,
   MapPin,
   Clock,
   ExternalLink,
@@ -141,14 +140,12 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
   return (
     <div className="space-y-8">
       {/* Step 8 Master Header & Spike Simulator Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 border border-emerald-800/80 rounded-2xl p-6 relative overflow-hidden shadow-xl">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        
+      <div className="bg-slate-900 border border-emerald-900/60 rounded-2xl p-6 relative overflow-hidden shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-700/80 text-emerald-300 text-xs font-mono font-medium mb-3">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              Operations Command & Dynamic Intelligence
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-700/80 text-emerald-300 text-xs font-medium mb-3">
+              <Activity className="w-3.5 h-3.5 text-emerald-400" />
+              Operations Command Center
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
               HARVEST ZERO Operations Command
@@ -406,10 +403,10 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
               </div>
             </div>
 
-            {/* Explainable AI Audit Trail */}
+            {/* Explainable Decision Audit Trail */}
             <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1.5 font-sans leading-relaxed">
-              <span className="font-mono font-bold text-emerald-400 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
+              <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" />
                 Explainable Decision Audit Trail:
               </span>
               <p>{workflowData.reroute_recommendation?.explainable_rationale}</p>
@@ -435,12 +432,12 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
         </div>
       )}
 
-      {/* STEP 9: SYSTEM BENCHMARK — BASELINE LOGISTICS VS HARVEST ZERO OPTIMIZATION */}
+      {/* SYSTEM BENCHMARK: BASELINE LOGISTICS VS HARVEST ZERO OPTIMIZATION */}
       {comparisonData && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-md">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
             <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-700/60 text-emerald-300 text-[11px] font-mono font-semibold mb-2">
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-700/60 text-emerald-300 text-[11px] font-semibold mb-2">
                 <Award className="w-3.5 h-3.5 text-emerald-400" />
                 Operations Research Performance Benchmark (Dynamic Optimization vs Baseline)
               </div>
@@ -456,21 +453,21 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
 
             {/* Strategic KPI Deltas */}
             <div className="flex items-center gap-3">
-              <div className="px-4 py-2.5 rounded-xl bg-emerald-950/60 border border-emerald-800 text-right">
-                <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider block">Waste Prevented</span>
-                <span className="text-lg font-mono font-extrabold text-emerald-200">
-                  {comparisonData.waste_reduction_kg?.toLocaleString()} kg
+              <div className="px-4 py-2.5 rounded-xl bg-emerald-950/70 border border-emerald-800 text-right">
+                <span className="text-[10px] font-medium text-emerald-400 uppercase tracking-wider block">Waste Prevented</span>
+                <span className="text-xl font-bold text-emerald-200 tabular-nums">
+                  {comparisonData.waste_reduction_kg?.toLocaleString()}<span className="text-xs font-semibold ml-0.5 text-emerald-400">kg</span>
                 </span>
-                <span className="text-[10px] text-emerald-400 block font-mono">
+                <span className="text-[11px] text-emerald-300/90 block">
                   ({comparisonData.waste_reduction_pct}% reduction)
                 </span>
               </div>
-              <div className="px-4 py-2.5 rounded-xl bg-teal-950/60 border border-teal-800 text-right">
-                <span className="text-[10px] font-mono text-teal-400 uppercase tracking-wider block">Profit Gain</span>
-                <span className="text-lg font-mono font-extrabold text-teal-200">
-                  +₹{comparisonData.profit_increase_inr?.toLocaleString()}
+              <div className="px-4 py-2.5 rounded-xl bg-slate-950 border border-emerald-900/80 text-right">
+                <span className="text-[10px] font-medium text-emerald-400 uppercase tracking-wider block">Profit Gain</span>
+                <span className="text-xl font-bold text-emerald-200 tabular-nums">
+                  +<span className="text-xs font-semibold mr-0.5 text-emerald-400">₹</span>{comparisonData.profit_increase_inr?.toLocaleString()}
                 </span>
-                <span className="text-[10px] text-teal-400 block font-mono">
+                <span className="text-[11px] text-emerald-300/90 block">
                   (+{comparisonData.profit_increase_pct}% margin)
                 </span>
               </div>
@@ -482,31 +479,31 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
             {/* 1. Baseline Traditional */}
             <div className="p-5 rounded-xl bg-slate-950/60 border border-rose-950/80 space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-rose-950">
-                <span className="text-xs font-mono font-bold text-rose-300">Traditional Logistics (Baseline FIFO)</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-950 text-rose-300 border border-rose-800">
+                <span className="text-xs font-bold text-rose-300">Traditional Logistics (Baseline FIFO)</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-rose-950 text-rose-300 border border-rose-800">
                   High Dock Rejection
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+              <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-slate-500 block text-[10px]">Total Allocated</span>
-                  <span className="text-slate-200 font-bold">{comparisonData.baseline_plan.total_allocated_kg?.toLocaleString()} kg</span>
+                  <span className="text-slate-200 font-bold tabular-nums">{comparisonData.baseline_plan.total_allocated_kg?.toLocaleString()} kg</span>
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[10px]">Spoiled / Rejected at Dock</span>
-                  <span className="text-rose-400 font-bold">{comparisonData.baseline_plan.spoiled_rejected_kg?.toLocaleString()} kg</span>
+                  <span className="text-rose-400 font-bold tabular-nums">{comparisonData.baseline_plan.spoiled_rejected_kg?.toLocaleString()} kg</span>
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[10px]">Spoilage Rate</span>
-                  <span className="text-rose-400 font-bold">{comparisonData.baseline_plan.spoilage_rate_pct}%</span>
+                  <span className="text-rose-400 font-bold tabular-nums">{comparisonData.baseline_plan.spoilage_rate_pct}%</span>
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[10px]">Spoilage Loss Cost</span>
-                  <span className="text-rose-400 font-bold">₹{comparisonData.baseline_plan.spoilage_loss_cost?.toLocaleString()}</span>
+                  <span className="text-rose-400 font-bold tabular-nums">₹{comparisonData.baseline_plan.spoilage_loss_cost?.toLocaleString()}</span>
                 </div>
                 <div className="col-span-2 pt-2 border-t border-slate-900 flex justify-between items-baseline">
                   <span className="text-slate-400 text-[11px]">Net Realized Profit:</span>
-                  <span className="text-sm font-bold text-slate-300">₹{comparisonData.baseline_plan.net_realized_margin?.toLocaleString()}</span>
+                  <span className="text-sm font-bold text-slate-300 tabular-nums">₹{comparisonData.baseline_plan.net_realized_margin?.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -514,8 +511,8 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
             {/* 2. Harvest Zero Optimized */}
             <div className="p-5 rounded-xl bg-emerald-950/20 border border-emerald-800/80 space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-emerald-900/60">
-                <span className="text-xs font-mono font-bold text-emerald-300">HARVEST ZERO (FEFO + Kinetic Engine)</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-700">
+                <span className="text-xs font-bold text-emerald-300">HARVEST ZERO (FEFO + Kinetic Engine)</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-950 text-emerald-300 border border-emerald-700">
                   Zero Dock Rejection
                 </span>
               </div>
@@ -546,7 +543,7 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
 
           {/* Key Findings Bullet List */}
           <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-            <span className="text-xs font-mono text-emerald-400 uppercase tracking-wider block font-semibold">
+            <span className="text-xs text-emerald-400 uppercase tracking-wider block font-semibold">
               Operations Research Audit Findings
             </span>
             <ul className="space-y-1.5 text-xs text-slate-300 font-sans">

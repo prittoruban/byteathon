@@ -17,7 +17,7 @@ const firaCode = Fira_Code({
 });
 
 export const metadata: Metadata = {
-  title: "HARVEST ZERO — Intelligent Post-Harvest Loss Prevention",
+  title: "HARVEST ZERO: Post-Harvest Loss Prevention Platform",
   description:
     "Decision-support platform connecting farmers, storage facilities, transport operators, and buyers to eliminate agricultural waste and optimize perishables distribution.",
 };

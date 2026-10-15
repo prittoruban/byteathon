@@ -11,7 +11,6 @@ import {
   ShieldAlert,
   DollarSign,
   Clock,
-  Sparkles,
   RefreshCw,
   Warehouse,
   Check,
@@ -252,10 +251,9 @@ export function DynamicReroutingView() {
     <div className="space-y-8">
       {/* Header Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-800/60 text-amber-300 text-xs font-mono font-medium mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-800/60 text-amber-300 text-xs font-medium mb-3">
               <Route className="w-3.5 h-3.5" />
               Quality-Driven Dynamic Rerouting Engine
             </div>
@@ -619,8 +617,8 @@ export function DynamicReroutingView() {
 
               {/* Explainable Decision Rationale Box */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2">
-                <span className="text-xs font-mono font-semibold text-emerald-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" />
                   Autonomous Decision Rationale (Explainable AI):
                 </span>
                 <p className="text-xs text-slate-200 leading-relaxed font-sans">

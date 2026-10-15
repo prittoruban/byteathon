@@ -10,7 +10,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   ArrowRight,
-  Sparkles,
   Warehouse,
   Factory,
   RefreshCw,
@@ -188,10 +187,9 @@ export function SecondaryRecoveryView() {
     <div className="space-y-8">
       {/* Header Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-800/60 text-amber-300 text-xs font-mono font-medium mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/80 border border-amber-800/60 text-amber-300 text-xs font-medium mb-3">
               <Scale className="w-3.5 h-3.5" />
               Secondary-Market Recovery & Arbitrage Protocol
             </div>
@@ -215,9 +213,9 @@ export function SecondaryRecoveryView() {
             </button>
             <button
               onClick={loadScenarioNotBeneficial}
-              className="px-3.5 py-2 rounded-lg bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-cyan-700/60"
+              className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-slate-700"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-cyan-300" />
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               <span>Scenario B: Maintain Retail</span>
             </button>
             <button
@@ -241,7 +239,7 @@ export function SecondaryRecoveryView() {
                 <Scale className="w-4 h-4 text-emerald-400" />
                 Arbitrage Simulation Inputs
               </h3>
-              <span className="text-xs font-mono text-emerald-400/90 font-medium">Quality Arbitrage Engine</span>
+              <span className="text-xs text-emerald-400 font-medium">Quality Arbitrage Engine</span>
             </div>
 
             {/* Commodity Selector */}
@@ -471,18 +469,19 @@ export function SecondaryRecoveryView() {
                   </div>
 
                   <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-right shrink-0">
-                    <span className="text-[10px] font-mono text-slate-400 block">
+                    <span className="text-[10px] text-slate-400 block font-medium">
                       Net Economic Spread
                     </span>
                     <span
-                      className={`text-xl font-bold font-mono ${
+                      className={`text-xl font-bold tabular-nums ${
                         arbitrageResult.arbitrage_net_difference > 0
                           ? "text-emerald-400"
                           : "text-slate-200"
                       }`}
                     >
                       {arbitrageResult.arbitrage_net_difference > 0 ? "+" : ""}
-                      ₹{arbitrageResult.arbitrage_net_difference.toLocaleString()}
+                      <span className="text-sm font-semibold mr-0.5">₹</span>
+                      {arbitrageResult.arbitrage_net_difference.toLocaleString()}
                     </span>
                     <span className="text-[10px] text-slate-400 block mt-0.5">
                       Secondary vs Primary Net
@@ -708,7 +707,7 @@ export function SecondaryRecoveryView() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-950 text-slate-400 font-mono text-[11px] border-b border-slate-800">
+                  <tr className="bg-slate-950 text-slate-400 text-[11px] border-b border-slate-800 font-semibold">
                     <th className="py-3 px-4">Processing Facility</th>
                     <th className="py-3 px-4">Crop Intake</th>
                     <th className="py-3 px-4">Absorption Capacity</th>

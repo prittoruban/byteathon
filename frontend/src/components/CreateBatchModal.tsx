@@ -188,7 +188,7 @@ export function CreateBatchModal({
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-xs font-mono">
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-sm font-sans">
           {/* Farmer */}
           <div>
             <label
@@ -201,11 +201,11 @@ export function CreateBatchModal({
               id="create-batch-farmer"
               value={farmerId}
               onChange={(e) => setFarmerId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer text-sm"
             >
               {farmers.map((f) => (
                 <option key={f.id} value={f.id}>
-                  {f.name} ({f.location} — {f.storage_type})
+                  {f.name} ({f.location}, {f.storage_type})
                 </option>
               ))}
             </select>

@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Activity,
-  Sparkles,
   Clock,
   ArrowRight,
   ShieldAlert,
@@ -212,11 +211,10 @@ export function SpoilageSimulator() {
     <div className="space-y-8">
       {/* Top Header Card */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-300 text-xs font-mono font-medium mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-300 text-xs font-medium mb-3">
+              <Activity className="w-3.5 h-3.5" />
               Arrhenius Biochemical Degradation Engine
             </div>
             <h2 className="text-2xl font-bold text-slate-100 tracking-tight">
@@ -417,7 +415,7 @@ export function SpoilageSimulator() {
                   setTemperature(4.0);
                   setHumidity(90.0);
                 }}
-                className="px-2.5 py-1 text-[11px] rounded bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 hover:bg-cyan-900/60 transition-colors"
+                className="px-2.5 py-1 text-[11px] rounded bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/60 transition-colors"
               >
                 Optimal Cold Chain (4°C)
               </button>
@@ -453,12 +451,12 @@ export function SpoilageSimulator() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {/* Acceleration Factor */}
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                  <span className="text-[11px] font-mono text-slate-400 block">
+                  <span className="text-xs text-slate-400 block font-medium">
                     Acceleration Factor α(T)
                   </span>
                   <div className="flex items-baseline gap-1 mt-1">
                     <span
-                      className={`text-2xl font-bold font-mono ${
+                      className={`text-2xl font-bold tabular-nums ${
                         assessment.acceleration_factor > 4.0
                           ? "text-rose-400"
                           : assessment.acceleration_factor > 1.8
@@ -466,39 +464,39 @@ export function SpoilageSimulator() {
                           : "text-emerald-400"
                       }`}
                     >
-                      {assessment.acceleration_factor.toFixed(2)}x
+                      {assessment.acceleration_factor.toFixed(2)}<span className="text-sm font-semibold ml-0.5">x</span>
                     </span>
                     <span className="text-[10px] text-slate-400">vs k_ref</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 mt-1 block">
-                    Q10 equivalent: {assessment.q10_equivalent}
+                  <span className="text-[10px] text-slate-400 mt-1 block font-mono">
+                    Q10: {assessment.q10_equivalent}
                   </span>
                 </div>
 
                 {/* Reaction Decay Rate */}
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                  <span className="text-[11px] font-mono text-slate-400 block">
+                  <span className="text-xs text-slate-400 block font-medium">
                     Reaction Rate k(T)
                   </span>
                   <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-2xl font-bold font-mono text-slate-100">
+                    <span className="text-2xl font-bold text-slate-100 tabular-nums">
                       {assessment.k_decay_rate_per_day.toFixed(4)}
                     </span>
-                    <span className="text-[10px] text-slate-400">/day</span>
+                    <span className="text-xs text-slate-400">/day</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 mt-1 block">
-                    Base k_ref: {assessment.base_decay_rate_per_day}/d
+                  <span className="text-[10px] text-slate-400 mt-1 block font-mono">
+                    Base: {assessment.base_decay_rate_per_day}/d
                   </span>
                 </div>
 
                 {/* Spoilage Risk Score */}
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                  <span className="text-[11px] font-mono text-slate-400 block">
+                  <span className="text-xs text-slate-400 block font-medium">
                     Spoilage Risk Score
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1">
                     <span
-                      className={`text-2xl font-bold font-mono ${
+                      className={`text-2xl font-bold tabular-nums ${
                         assessment.risk_level === "CRITICAL"
                           ? "text-rose-400"
                           : assessment.risk_level === "WARNING"
@@ -525,14 +523,14 @@ export function SpoilageSimulator() {
 
                 {/* Remaining Shelf Life */}
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                  <span className="text-[11px] font-mono text-slate-400 block">
+                  <span className="text-xs text-slate-400 block font-medium">
                     Effective Shelf Life
                   </span>
                   <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-2xl font-bold font-mono text-slate-100">
+                    <span className="text-2xl font-bold text-slate-100 tabular-nums">
                       {assessment.updated_remaining_shelf_life_hours.toFixed(0)}
                     </span>
-                    <span className="text-[10px] text-slate-400">hours</span>
+                    <span className="text-xs text-slate-400">hrs</span>
                   </div>
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     ({assessment.updated_remaining_shelf_life_days.toFixed(1)} days)
