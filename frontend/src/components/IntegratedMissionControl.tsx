@@ -4,12 +4,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   Flame,
   Route,
-  TrendingUp,
   ShieldAlert,
-  ShieldCheck,
   CheckCircle2,
-  AlertTriangle,
-  ArrowRight,
   Truck,
   Warehouse,
   Sprout,
@@ -19,9 +15,6 @@ import {
   Save,
   RotateCcw,
   Sparkles,
-  MapPin,
-  Clock,
-  ExternalLink,
   Scale,
   Award,
 } from "lucide-react";
@@ -30,7 +23,80 @@ interface IntegratedMissionControlProps {
   onNavigateToTab?: (tab: string) => void;
 }
 
-export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionControlProps) {
+interface MissionWorkflowData {
+  shipment?: { id: string };
+  persisted_to_database?: boolean;
+  reroute_recommendation?: {
+    recommended_destination?: { buyer_name?: string };
+    original_destination?: { buyer_name?: string };
+    comparison_summary?: {
+      transit_hours_saved?: number;
+      distance_saved_km?: number;
+      net_economic_benefit?: number;
+      revenue_delta?: number;
+      transport_cost_delta?: number;
+    };
+  };
+  spoilage_assessment?: {
+    acceleration_factor?: number;
+    k_decay_rate_per_day?: number;
+    spoilage_risk_score?: number;
+    risk_level?: string;
+    updated_remaining_shelf_life_hours?: number;
+  };
+  secondary_arbitrage?: {
+    arbitrage_recommended?: boolean;
+    recommended_option?: {
+      buyer_name?: string;
+      net_arbitrage_gain_vs_rejection?: number;
+      offered_price_per_kg?: number;
+    };
+    opportunity_cost_analysis?: {
+      total_baseline_loss_prevented?: number;
+    };
+  };
+  [key: string]: unknown;
+}
+
+interface MissionSummary {
+  total_produce_kg?: number;
+  total_batches_count?: number;
+  buyer_demand?: {
+    total_demand_kg?: number;
+  };
+  storage?: {
+    utilization_pct?: number;
+    available_capacity_kg?: number;
+  };
+  [key: string]: unknown;
+}
+
+interface MissionShipment {
+  id?: string;
+  allocated_quantity_kg?: number;
+  [key: string]: unknown;
+}
+
+interface MissionComparisonData {
+  baseline_metrics?: {
+    total_spoilage_loss_kg?: number;
+    rejection_loss_cost?: number;
+  };
+  harvest_zero_metrics?: {
+    total_spoilage_loss_kg?: number;
+    rejection_loss_cost?: number;
+    total_net_margin?: number;
+  };
+  comparative_improvement?: {
+    spoilage_reduction_pct?: number;
+    additional_profit?: number;
+  };
+  [key: string]: unknown;
+}
+
+export function IntegratedMissionControl({
+  onNavigateToTab: _onNavigateToTab,
+}: IntegratedMissionControlProps) {
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
@@ -49,7 +115,6 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
 
   // Fetch initial system status
   const fetchDashboardMetrics = useCallback(async () => {
-    setLoading(true);
     try {
       const [sumRes, shipRes, compRes] = await Promise.all([
         fetch(`${backendUrl}/api/inventory/summary`, { cache: "no-store" }),

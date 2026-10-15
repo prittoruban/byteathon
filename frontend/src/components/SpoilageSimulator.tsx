@@ -5,17 +5,12 @@ import {
   Thermometer,
   Flame,
   Snowflake,
-  AlertTriangle,
   CheckCircle2,
   Activity,
   Sparkles,
-  Clock,
   ArrowRight,
   ShieldAlert,
-  Zap,
-  RotateCcw,
   BookOpen,
-  TrendingUp,
 } from "lucide-react";
 
 interface CropKineticData {
@@ -98,10 +93,9 @@ export function SpoilageSimulator() {
   const [humidity, setHumidity] = useState<number>(75.0);
   const [remainingShelfLifeDays, setRemainingShelfLifeDays] = useState<number>(5.0);
   const [transitHours, setTransitHours] = useState<number>(8.0);
-  const [exposureHours, setExposureHours] = useState<number>(4.0);
+  const [exposureHours] = useState<number>(4.0);
 
   const [assessment, setAssessment] = useState<SpoilageAssessment | null>(null);
-  const [evaluating, setEvaluating] = useState<boolean>(false);
 
   // Temperature Spike Simulation state
   const [spikeResult, setSpikeResult] = useState<SpikeSimulationResult | null>(null);
@@ -126,7 +120,6 @@ export function SpoilageSimulator() {
 
   // Recalculate Arrhenius decay on parameter changes
   const evaluateKinetics = useCallback(async () => {
-    setEvaluating(true);
     try {
       const res = await fetch(`${backendUrl}/api/spoilage/evaluate`, {
         method: "POST",
@@ -148,8 +141,6 @@ export function SpoilageSimulator() {
       }
     } catch (err) {
       console.error("Failed to evaluate Arrhenius kinetics:", err);
-    } finally {
-      setEvaluating(false);
     }
   }, [
     backendUrl,

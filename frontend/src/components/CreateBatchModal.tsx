@@ -36,6 +36,12 @@ export function CreateBatchModal({
   const [cropType, setCropType] = useState<string>("Tomato");
   const [quantityKg, setQuantityKg] = useState<string>("3000");
   const [harvestDate, setHarvestDate] = useState<string>("");
+
+  useEffect(() => {
+    if (isOpen && !harvestDate) {
+      setHarvestDate(new Date().toISOString().split("T")[0]);
+    }
+  }, [isOpen, harvestDate]);
   const [initialShelfLifeDays, setInitialShelfLifeDays] = useState<string>("10");
   const [storageCondition, setStorageCondition] = useState<string>("ambient_heap");
   const [loading, setLoading] = useState<boolean>(false);
@@ -43,7 +49,6 @@ export function CreateBatchModal({
 
   useEffect(() => {
     if (isOpen) {
-      setHarvestDate(new Date().toISOString().split("T")[0]);
       // Fetch available farmers
       fetch(`${backendUrl}/api/farmers`)
         .then((res) => res.json())

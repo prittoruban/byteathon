@@ -34,12 +34,16 @@ export function UpdateBatchModal({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [prevBatchId, setPrevBatchId] = useState<string | null>(null);
+
+  if (batch && batch.id !== prevBatchId) {
+    setPrevBatchId(batch.id);
+    setStatus(batch.status);
+    setRemainingShelfLife(batch.remaining_shelf_life_days.toString());
+    setStorageCondition(batch.storage_condition);
+  }
+
   useEffect(() => {
-    if (batch) {
-      setStatus(batch.status);
-      setRemainingShelfLife(batch.remaining_shelf_life_days.toString());
-      setStorageCondition(batch.storage_condition);
-    }
     if (isOpen) {
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === "Escape") {
@@ -49,7 +53,7 @@ export function UpdateBatchModal({
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }
-  }, [batch, isOpen, onClose]);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !batch) return null;
 

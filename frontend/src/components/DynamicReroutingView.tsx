@@ -4,17 +4,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   Route,
   Truck,
-  AlertTriangle,
   Flame,
   CheckCircle2,
-  ArrowRight,
   ShieldAlert,
-  DollarSign,
-  Clock,
   Sparkles,
   RefreshCw,
   Warehouse,
-  Check,
   Save,
   ShieldCheck,
   Navigation,
@@ -153,12 +148,11 @@ export function DynamicReroutingView() {
 
   // Simulated thermal spike input
   const [simulatedTemp, setSimulatedTemp] = useState<number>(36.5);
-  const [triggerReason, setTriggerReason] = useState<string>(
+  const [triggerReason] = useState<string>(
     "Refrigeration compressor failure reported by IoT cabin sensor"
   );
 
   const fetchActiveShipments = useCallback(async () => {
-    setLoading(true);
     try {
       const res = await fetch(`${backendUrl}/api/shipments/active`, {
         cache: "no-store",
@@ -231,7 +225,7 @@ export function DynamicReroutingView() {
       );
 
       if (res.ok) {
-        const result = await res.json();
+        await res.json();
         setPersistSuccess(
           `Shipment status updated to 'rerouted' in Supabase! New destination: ${recommendation.recommended_destination?.buyer_name}.`
         );

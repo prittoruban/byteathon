@@ -3,14 +3,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Scale,
-  DollarSign,
   TrendingUp,
   ShieldCheck,
   ShieldAlert,
-  AlertTriangle,
-  CheckCircle2,
-  ArrowRight,
-  Sparkles,
   Warehouse,
   Factory,
   RefreshCw,
@@ -95,7 +90,6 @@ export function SecondaryRecoveryView() {
 
   // Fetch secondary buyers from Supabase
   const fetchSecondaryBuyers = useCallback(async () => {
-    setLoading(true);
     try {
       const res = await fetch(`${backendUrl}/api/secondary/buyers`);
       if (res.ok) {
@@ -120,7 +114,6 @@ export function SecondaryRecoveryView() {
       slDaysToUse?: number,
       cropToUse?: string
     ) => {
-      setEvaluating(true);
       const crop = cropToUse || cropType;
       const temp = tempToUse !== undefined ? tempToUse : temperature;
       const slDays = slDaysToUse !== undefined ? slDaysToUse : remainingShelfLifeDays;
