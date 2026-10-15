@@ -22,25 +22,25 @@ export function ShelfLifeBadge({
 
   const colorConfig = isCritical
     ? {
-        bg: "bg-rose-50 dark:bg-rose-950/40",
-        border: "border-rose-200 dark:border-rose-900",
-        text: "text-rose-700 dark:text-rose-300",
-        bar: "bg-rose-500",
+        bg: "bg-[#FF453A]/10",
+        border: "border-[#FF453A]/25",
+        text: "text-[#FF453A]",
+        bar: "bg-[#FF453A]",
         icon: AlertTriangle,
       }
     : isWarning
     ? {
-        bg: "bg-amber-50 dark:bg-amber-950/40",
-        border: "border-amber-200 dark:border-amber-900",
-        text: "text-amber-800 dark:text-amber-300",
-        bar: "bg-amber-500",
+        bg: "bg-[#FF9F0A]/10",
+        border: "border-[#FF9F0A]/25",
+        text: "text-[#FF9F0A]",
+        bar: "bg-[#FF9F0A]",
         icon: Clock,
       }
     : {
-        bg: "bg-emerald-50 dark:bg-emerald-950/40",
-        border: "border-emerald-200 dark:border-emerald-900",
-        text: "text-emerald-800 dark:text-emerald-300",
-        bar: "bg-emerald-500",
+        bg: "bg-[#30D158]/10",
+        border: "border-[#30D158]/25",
+        text: "text-[#30D158]",
+        bar: "bg-[#30D158]",
         icon: CheckCircle,
       };
 
@@ -48,20 +48,20 @@ export function ShelfLifeBadge({
 
   return (
     <div className="w-full space-y-1.5">
-      <div className="flex items-center justify-between text-xs font-mono">
+      <div className="flex items-center justify-between text-xs">
         <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-semibold ${colorConfig.bg} ${colorConfig.border} ${colorConfig.text}`}
+          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-medium tabular-nums ${colorConfig.bg} ${colorConfig.border} ${colorConfig.text}`}
         >
-          <Icon className="w-3 h-3" />
+          <Icon className="w-3 h-3 stroke-[2]" />
           <span>{remainingDays} days left</span>
         </span>
-        <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+        <span className="text-neutral-400 text-[11px] tabular-nums font-medium">
           {percentage}% viable
         </span>
       </div>
       {/* Progress track */}
       <div
-        className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden"
+        className="w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden"
         role="progressbar"
         aria-valuenow={percentage}
         aria-valuemin={0}

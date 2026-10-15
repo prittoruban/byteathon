@@ -12,7 +12,6 @@ import {
   ArrowRight,
   Truck,
   Warehouse,
-  Sprout,
   DollarSign,
   Activity,
   Zap,
@@ -204,58 +203,70 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
 
       {/* Key Operations KPI Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
-          <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 mb-1">
-            <span className="text-xs font-medium">Live Inventory Volume</span>
-            <Sprout className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+        <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+              Live Inventory Volume
+            </span>
+            <div className="mt-3 flex items-baseline gap-1">
+              <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
+                {summary?.total_produce_kg?.toLocaleString() ?? "15,500"}
+              </span>
+              <span className="text-sm font-medium text-neutral-400">kg</span>
+            </div>
           </div>
-          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white">
-            {summary?.total_produce_kg?.toLocaleString() ?? "15,500"}
-            <span className="text-xs font-normal text-slate-500 ml-1">kg</span>
-          </div>
-          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+          <div className="mt-3 text-xs text-neutral-400">
             {summary?.total_batches_count ?? 3} harvest batches tracked
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
-          <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 mb-1">
-            <span className="text-xs font-medium">Perishables In Transit</span>
-            <Truck className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+        <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+              Perishables In Transit
+            </span>
+            <div className="mt-3 flex items-baseline gap-1">
+              <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
+                {activeShipments.reduce((acc, s) => acc + (s.allocated_quantity_kg || 0), 0).toLocaleString()}
+              </span>
+              <span className="text-sm font-medium text-neutral-400">kg</span>
+            </div>
           </div>
-          <div className="text-2xl font-bold font-mono text-cyan-700 dark:text-cyan-300">
-            {activeShipments.reduce((acc, s) => acc + (s.allocated_quantity_kg || 0), 0).toLocaleString()}
-            <span className="text-xs font-normal text-slate-500 ml-1">kg</span>
-          </div>
-          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+          <div className="mt-3 text-xs text-neutral-400">
             {activeShipments.length} active fleet consignment(s)
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
-          <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 mb-1">
-            <span className="text-xs font-medium">Total Market Demand</span>
-            <Warehouse className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+        <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+              Total Market Demand
+            </span>
+            <div className="mt-3 flex items-baseline gap-1">
+              <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
+                {summary?.buyer_demand?.total_demand_kg?.toLocaleString() ?? "23,000"}
+              </span>
+              <span className="text-sm font-medium text-neutral-400">kg</span>
+            </div>
           </div>
-          <div className="text-2xl font-bold font-mono text-amber-700 dark:text-amber-300">
-            {summary?.buyer_demand?.total_demand_kg?.toLocaleString() ?? "23,000"}
-            <span className="text-xs font-normal text-slate-500 ml-1">kg</span>
-          </div>
-          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+          <div className="mt-3 text-xs text-neutral-400">
             Retail & Secondary Processors
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
-          <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 mb-1">
-            <span className="text-xs font-medium">Avg Shelf-Life Buffer</span>
-            <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+        <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+              Avg Shelf-Life Buffer
+            </span>
+            <div className="mt-3 flex items-baseline gap-1">
+              <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
+                {summary?.avg_remaining_shelf_life_days ?? "6.2"}
+              </span>
+              <span className="text-sm font-medium text-neutral-400">days</span>
+            </div>
           </div>
-          <div className="text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-300">
-            {summary?.avg_remaining_shelf_life_days ?? "6.2"}
-            <span className="text-xs font-normal text-slate-500 ml-1">days</span>
-          </div>
-          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+          <div className="mt-3 text-xs text-neutral-400">
             FEFO micro-climate tracked
           </div>
         </div>
