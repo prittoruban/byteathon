@@ -37,6 +37,7 @@ import { SpoilageSimulator } from "@/components/SpoilageSimulator";
 import { DynamicReroutingView } from "@/components/DynamicReroutingView";
 import { SecondaryRecoveryView } from "@/components/SecondaryRecoveryView";
 import { IntegratedMissionControl } from "@/components/IntegratedMissionControl";
+import { FarmerView } from "@/components/FarmerView";
 
 interface HealthData {
   status: string;
@@ -211,6 +212,9 @@ export default function Dashboard() {
     "overview" | "distribution" | "rerouting" | "secondary" | "spoilage" | "batches" | "buyers" | "storage" | "vehicles"
   >("overview");
 
+  // View Mode: Defaults to ultra-simple, voice-enabled Farmer View for rural Indian farmers
+  const [viewMode, setViewMode] = useState<"farmer" | "manager">("farmer");
+
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
@@ -369,38 +373,58 @@ export default function Dashboard() {
                 <span className="font-semibold text-lg tracking-tight text-white">
                   HARVEST ZERO
                 </span>
-                <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 border border-white/[0.1] px-2 py-0.5 rounded-full">
-                  Operations Control
+                <span
+                  className={`text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                    viewMode === "farmer"
+                      ? "bg-[#30D158]/15 text-[#30D158] border-[#30D158]/25"
+                      : "text-neutral-400 border-white/[0.1]"
+                  }`}
+                >
+                  {viewMode === "farmer"
+                    ? "किसान साथी (Farmer View)"
+                    : "Operations Control"}
                 </span>
               </div>
               <p className="text-xs text-neutral-400 hidden sm:block">
-                Post-Harvest Loss Prevention and Cold-Chain Logistics
+                {viewMode === "farmer"
+                  ? "सरल फसल सुरक्षा और सही दाम साथी"
+                  : "Post-Harvest Loss Prevention and Cold-Chain Logistics"}
               </p>
             </div>
           </div>
 
           {/* Quick Actions & System Status */}
           <div className="flex items-center gap-2.5">
+            {/* View Mode Switcher */}
+            {viewMode === "farmer" ? (
+              <button
+                onClick={() => setViewMode("manager")}
+                className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold text-neutral-300 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] transition-all cursor-pointer"
+                title="Switch to Logistics Manager View"
+              >
+                <span>⚙️ ऑपरेशन्स (Manager View)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setViewMode("farmer")}
+                className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-[#30D158] hover:bg-[#28b84d] transition-all cursor-pointer shadow-sm"
+                title="Switch to Farmer View"
+              >
+                <span>🌾 किसान साथी (Farmer View)</span>
+              </button>
+            )}
+
             {/* Quick Register Produce Action */}
             <button
               onClick={() => setCreateModalOpen(true)}
-              className="hidden md:inline-flex items-center gap-2 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Register Batch</span>
+              <span className="hidden sm:inline">
+                {viewMode === "farmer" ? "नई फसल जोड़ें" : "Register Batch"}
+              </span>
+              <span className="sm:hidden">+</span>
             </button>
-
-            {/* Offline Alert (Only shown if service is disconnected) */}
-            {health?.status !== "healthy" && (
-              <div
-                role="status"
-                aria-live="polite"
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-950/60 border border-rose-800/60 text-rose-300"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                <span>Offline</span>
-              </div>
-            )}
 
             {/* Refresh Button */}
             <button
@@ -419,66 +443,83 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Sub-Navigation: iOS Segmented Control Tab Bar */}
-        <div className="border-t border-white/[0.08] bg-black/40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto flex items-center justify-between gap-4 scrollbar-none">
-            <nav
-              role="tablist"
-              aria-label="Platform Navigation"
-              className="flex items-center gap-1 shrink-0"
-            >
-              {tabsConfig.map((tab, idx) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    id={`tab-${tab.id}`}
-                    role="tab"
-                    aria-selected={isActive}
-                    aria-controls={`panel-${tab.id}`}
-                    tabIndex={isActive ? 0 : -1}
-                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                    onKeyDown={(e) => handleTabKeyDown(e, idx)}
-                    className={`inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 shrink-0 ${
-                      isActive
-                        ? "bg-[#242426] text-white shadow-xs font-semibold border border-white/[0.12]"
-                        : "text-neutral-400 hover:text-white hover:bg-white/[0.06]"
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5 stroke-[2]" aria-hidden="true" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Contextual Action Button */}
-            {activeTab === "distribution" && (
-              <button
-                onClick={runDistributionOptimization}
-                disabled={optimizing}
-                className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer shrink-0"
+        {/* Sub-Navigation: iOS Segmented Control Tab Bar ONLY in Manager Mode */}
+        {viewMode === "manager" && (
+          <div className="border-t border-white/[0.08] bg-black/40">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto flex items-center justify-between gap-4 scrollbar-none">
+              <nav
+                role="tablist"
+                aria-label="Platform Navigation"
+                className="flex items-center gap-1 shrink-0"
               >
-                <Zap
-                  className={`w-3.5 h-3.5 ${
-                    optimizing ? "animate-spin text-amber-300" : ""
-                  }`}
-                />
-                <span>
-                  {optimizing ? "Computing..." : "Re-Run Optimization"}
-                </span>
-              </button>
-            )}
+                {tabsConfig.map((tab, idx) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      id={`tab-${tab.id}`}
+                      role="tab"
+                      aria-selected={isActive}
+                      aria-controls={`panel-${tab.id}`}
+                      tabIndex={isActive ? 0 : -1}
+                      onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                      onKeyDown={(e) => handleTabKeyDown(e, idx)}
+                      className={`inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 shrink-0 ${
+                        isActive
+                          ? "bg-[#242426] text-white shadow-xs font-semibold border border-white/[0.12]"
+                          : "text-neutral-400 hover:text-white hover:bg-white/[0.06]"
+                      }`}
+                    >
+                      <Icon
+                        className="w-3.5 h-3.5 stroke-[2]"
+                        aria-hidden="true"
+                      />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* Contextual Action Button */}
+              {activeTab === "distribution" && (
+                <button
+                  onClick={runDistributionOptimization}
+                  disabled={optimizing}
+                  className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer shrink-0"
+                >
+                  <Zap
+                    className={`w-3.5 h-3.5 ${
+                      optimizing ? "animate-spin text-amber-300" : ""
+                    }`}
+                  />
+                  <span>
+                    {optimizing ? "Computing..." : "Re-Run Optimization"}
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Top 5 KPI Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* 1. Total Produce Tracked */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+        {viewMode === "farmer" ? (
+          <FarmerView
+            batches={batches}
+            recommendations={distributionPlan?.recommendations || []}
+            storages={storages}
+            onOpenRegisterModal={() => setCreateModalOpen(true)}
+            onRefresh={fetchAllData}
+            loading={loading}
+            onSwitchToManager={() => setViewMode("manager")}
+          />
+        ) : (
+          <>
+            {/* Top 5 KPI Grid */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* 1. Total Produce Tracked */}
           <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
             <div>
               <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
@@ -1244,6 +1285,8 @@ export default function Dashboard() {
               })}
             </div>
           </div>
+        )}
+          </>
         )}
       </main>
 

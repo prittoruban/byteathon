@@ -190,7 +190,7 @@ export function CreateBatchModal({
               htmlFor="create-batch-farmer"
               className="block text-neutral-300 font-medium mb-1 text-xs"
             >
-              Select Farmer Producer
+              किसान का नाम (Farmer)
             </label>
             <select
               id="create-batch-farmer"
@@ -206,46 +206,79 @@ export function CreateBatchModal({
             </select>
           </div>
 
-          {/* Crop Type & Quantity */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label
-                htmlFor="create-batch-crop"
-                className="block text-neutral-300 font-medium mb-1 text-xs"
-              >
-                Crop Commodity
-              </label>
-              <select
-                id="create-batch-crop"
-                value={cropType}
-                onChange={(e) => handleCropChange(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
-              >
-                {Object.keys(CROP_PRESETS).map((crop) => (
-                  <option key={crop} value={crop}>
-                    {crop}
-                  </option>
-                ))}
-              </select>
+          {/* Quick Visual Crop Selection (One-tap for farmers) */}
+          <div>
+            <label className="block text-neutral-300 font-semibold mb-2 text-xs">
+              फसल चुनें (Pick Your Crop)
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { crop: "Tomato", label: "टमाटर", emoji: "🍅" },
+                { crop: "Potato", label: "आलू", emoji: "🥔" },
+                { crop: "Onion", label: "प्याज", emoji: "🧅" },
+                { crop: "Mango", label: "आम", emoji: "🥭" },
+              ].map((item) => (
+                <button
+                  key={item.crop}
+                  type="button"
+                  onClick={() => handleCropChange(item.crop)}
+                  className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                    cropType === item.crop
+                      ? "bg-[#30D158]/20 border-[#30D158] text-white scale-[1.02] shadow-md ring-2 ring-[#30D158]/40"
+                      : "bg-[#242426] border-white/10 text-neutral-300 hover:border-white/25"
+                  }`}
+                >
+                  <span className="text-2xl">{item.emoji}</span>
+                  <span className="text-xs font-bold">{item.label}</span>
+                  <span className="text-[10px] text-neutral-400">{item.crop}</span>
+                </button>
+              ))}
             </div>
-            <div>
-              <label
-                htmlFor="create-batch-qty"
-                className="block text-neutral-300 font-medium mb-1 text-xs"
-              >
-                Quantity (kg)
+          </div>
+
+          {/* Quick Quantity Presets */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-neutral-300 font-semibold text-xs">
+                कुल वजन (Total Weight)
               </label>
-              <input
-                id="create-batch-qty"
-                type="number"
-                min="100"
-                step="50"
-                value={quantityKg}
-                onChange={(e) => setQuantityKg(e.target.value)}
-                required
-                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-              />
+              <span className="text-xs text-[#30D158] font-bold tabular-nums">
+                {Number(quantityKg || 0).toLocaleString()} kg
+              </span>
             </div>
+
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              {[
+                { kg: "500", label: "10 बोरी (500 kg)" },
+                { kg: "1500", label: "30 बोरी (1500 kg)" },
+                { kg: "3000", label: "60 बोरी (3000 kg)" },
+              ].map((preset) => (
+                <button
+                  key={preset.kg}
+                  type="button"
+                  onClick={() => setQuantityKg(preset.kg)}
+                  className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    quantityKg === preset.kg
+                      ? "bg-white text-black border-white"
+                      : "bg-[#242426] text-neutral-300 border-white/10 hover:border-white/20"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
+            <input
+              id="create-batch-qty"
+              type="number"
+              min="100"
+              step="50"
+              value={quantityKg}
+              onChange={(e) => setQuantityKg(e.target.value)}
+              placeholder="या खुद वजन लिखें (in kg)"
+              required
+              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 text-sm"
+            />
           </div>
 
           {/* Harvest Date & Initial Shelf Life */}
