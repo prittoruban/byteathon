@@ -163,9 +163,10 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
             <button
               onClick={() => handleSimulateMasterSpike(false)}
               disabled={runningWorkflow}
-              className="px-5 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm flex items-center justify-center gap-2.5 transition-all shadow-lg shadow-rose-950/60 hover:scale-[1.02] active:scale-[0.98] border border-rose-400 cursor-pointer"
+              aria-busy={runningWorkflow}
+              className="min-h-[44px] px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 active:scale-[0.98] text-white font-bold text-sm flex items-center justify-center gap-2.5 transition-all shadow-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
             >
-              <Flame className="w-4 h-4 text-amber-200 animate-pulse" />
+              <Flame className="w-4 h-4 text-amber-200" aria-hidden="true" />
               <span>
                 {runningWorkflow ? "Simulating Thermal Event..." : "Simulate Temperature Spike (+26°C)"}
               </span>
@@ -174,18 +175,28 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
             <button
               onClick={() => handleSimulateMasterSpike(true)}
               disabled={runningWorkflow}
-              className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all cursor-pointer"
+              aria-busy={runningWorkflow}
+              className="min-h-[44px] px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-[0.98] text-slate-100 font-semibold text-xs flex items-center justify-center gap-2 border border-slate-700 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
             >
-              <Zap className="w-4 h-4 text-amber-400" />
+              <Zap className="w-4 h-4 text-amber-400" aria-hidden="true" />
               <span>Simulate & Auto-Persist</span>
             </button>
           </div>
+        </div>
+
+        {/* Apple HIG: Screen Reader Live Status Region */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {runningWorkflow
+            ? "Simulating cold-chain temperature spike and evaluating dynamic rerouting options..."
+            : workflowData
+            ? "Thermal event resolved: Reroute suggested to secondary puree processor with positive arbitrage yield."
+            : ""}
         </div>
       </div>
 
       {/* Persist Success Banner */}
       {persistNotification && (
-        <div className="p-4 rounded-xl bg-emerald-950/90 border border-emerald-500 text-emerald-200 text-xs flex items-start gap-3 shadow-lg">
+        <div className="p-4 rounded-2xl bg-emerald-950/90 border border-emerald-500 text-emerald-200 text-xs flex items-start gap-3 shadow-lg">
           <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
           <div>
             <span className="font-bold text-sm block">Supabase PostgreSQL Confirmed:</span>
@@ -196,58 +207,58 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
 
       {/* Key Operations KPI Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-xs font-mono">Live Inventory Volume</span>
-            <Sprout className="w-4 h-4 text-emerald-400" />
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
+          <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 mb-1">
+            <span className="text-xs font-medium">Live Inventory Volume</span>
+            <Sprout className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold font-mono text-slate-100">
+          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white">
             {summary?.total_produce_kg?.toLocaleString() ?? "15,500"}
-            <span className="text-xs font-normal text-slate-400 ml-1">kg</span>
+            <span className="text-xs font-normal text-slate-500 ml-1">kg</span>
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">
+          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
             {summary?.total_batches_count ?? 3} harvest batches tracked
           </div>
         </div>
 
-        <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-xs font-mono">Perishables In Transit</span>
-            <Truck className="w-4 h-4 text-cyan-400" />
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
+          <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 mb-1">
+            <span className="text-xs font-medium">Perishables In Transit</span>
+            <Truck className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
           </div>
-          <div className="text-2xl font-bold font-mono text-cyan-300">
+          <div className="text-2xl font-bold font-mono text-cyan-700 dark:text-cyan-300">
             {activeShipments.reduce((acc, s) => acc + (s.allocated_quantity_kg || 0), 0).toLocaleString()}
-            <span className="text-xs font-normal text-slate-400 ml-1">kg</span>
+            <span className="text-xs font-normal text-slate-500 ml-1">kg</span>
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">
+          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
             {activeShipments.length} active fleet consignment(s)
           </div>
         </div>
 
-        <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-xs font-mono">Total Market Demand</span>
-            <Warehouse className="w-4 h-4 text-amber-400" />
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
+          <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 mb-1">
+            <span className="text-xs font-medium">Total Market Demand</span>
+            <Warehouse className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           </div>
-          <div className="text-2xl font-bold font-mono text-amber-300">
+          <div className="text-2xl font-bold font-mono text-amber-700 dark:text-amber-300">
             {summary?.buyer_demand?.total_demand_kg?.toLocaleString() ?? "23,000"}
-            <span className="text-xs font-normal text-slate-400 ml-1">kg</span>
+            <span className="text-xs font-normal text-slate-500 ml-1">kg</span>
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">
+          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
             Retail & Secondary Processors
           </div>
         </div>
 
-        <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-xs font-mono">Avg Shelf-Life Buffer</span>
-            <Activity className="w-4 h-4 text-emerald-400" />
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
+          <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 mb-1">
+            <span className="text-xs font-medium">Avg Shelf-Life Buffer</span>
+            <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold font-mono text-emerald-300">
+          <div className="text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-300">
             {summary?.avg_remaining_shelf_life_days ?? "6.2"}
-            <span className="text-xs font-normal text-slate-400 ml-1">days</span>
+            <span className="text-xs font-normal text-slate-500 ml-1">days</span>
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">
+          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
             FEFO micro-climate tracked
           </div>
         </div>
@@ -620,7 +631,8 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
                   <td className="py-3 px-4">
                     <button
                       onClick={() => handleSimulateMasterSpike(false)}
-                      className="px-2.5 py-1 text-[11px] rounded bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 font-medium transition-colors cursor-pointer"
+                      className="px-3 py-1.5 min-h-[32px] text-xs rounded-lg bg-rose-950/80 hover:bg-rose-900/80 text-rose-200 border border-rose-700 font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                      aria-label={`Trigger anomaly on consignment ${s.transport_vehicles?.vehicle_number || s.id}`}
                     >
                       Trigger Anomaly
                     </button>

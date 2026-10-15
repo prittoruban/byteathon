@@ -289,8 +289,77 @@ export default function Dashboard() {
     return matchesCrop && matchesStatus;
   });
 
+  const tabsConfig = [
+    {
+      id: "overview",
+      label: "Mission Control (Overview)",
+      icon: Activity,
+    },
+    {
+      id: "distribution",
+      label: `Distribution Engine (${distributionPlan?.recommendations.length ?? 0})`,
+      icon: Route,
+    },
+    {
+      id: "rerouting",
+      label: "Dynamic Rerouting",
+      icon: Navigation,
+    },
+    {
+      id: "secondary",
+      label: "Secondary Arbitrage",
+      icon: Scale,
+    },
+    {
+      id: "spoilage",
+      label: "Arrhenius Spoilage Engine",
+      icon: Flame,
+    },
+    {
+      id: "batches",
+      label: `Produce Batches (${batches.length})`,
+      icon: Sprout,
+    },
+    {
+      id: "buyers",
+      label: `Buyer Demand (${buyers.length})`,
+      icon: Warehouse,
+    },
+    {
+      id: "storage",
+      label: `Cold Storage (${storages.length})`,
+      icon: ThermometerSnowflake,
+    },
+    {
+      id: "vehicles",
+      label: `Vehicle Fleet (${vehicles.length})`,
+      icon: Truck,
+    },
+  ] as const;
+
+  const handleTabKeyDown = (e: React.KeyboardEvent, index: number) => {
+    const total = tabsConfig.length;
+    let nextIndex = index;
+    if (e.key === "ArrowRight") {
+      nextIndex = (index + 1) % total;
+    } else if (e.key === "ArrowLeft") {
+      nextIndex = (index - 1 + total) % total;
+    } else if (e.key === "Home") {
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      nextIndex = total - 1;
+    } else {
+      return;
+    }
+    e.preventDefault();
+    const nextTab = tabsConfig[nextIndex].id;
+    setActiveTab(nextTab as typeof activeTab);
+    const nextElem = document.getElementById(`tab-${nextTab}`);
+    nextElem?.focus();
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#070f0b] dark:text-slate-100 transition-colors">
+    <div className="min-h-screen bg-[#F2F2F7] text-slate-900 dark:bg-[#000000] dark:text-white transition-colors">
       {/* Top Hackathon Banner */}
       <div className="bg-emerald-950 text-emerald-200 border-b border-emerald-900 px-4 py-2 text-xs font-mono flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -301,29 +370,29 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-emerald-400">Codename: HARVEST ZERO</span>
-          <span className="bg-emerald-800/80 text-emerald-200 px-2 py-0.5 rounded text-[11px] font-medium border border-emerald-700/50">
+          <span className="bg-emerald-800/80 text-emerald-200 px-2.5 py-0.5 rounded-full text-[11px] font-medium border border-emerald-700/50">
             Step 9: Testing & Benchmarks Verified
           </span>
         </div>
       </div>
 
-      {/* Main Header */}
-      <header className="sticky top-0 z-40 bg-white/90 dark:bg-[#0b1410]/90 backdrop-blur-md border-b border-emerald-100 dark:border-emerald-950/60 shadow-sm">
+      {/* Main Header (iOS Liquid Glass Material) */}
+      <header className="sticky top-0 z-40 ios-glass-bar shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-700/20">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-700/20">
               <Sprout className="w-6 h-6 stroke-[2.2]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg tracking-tight text-emerald-900 dark:text-emerald-100">
+                <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">
                   HARVEST ZERO
                 </span>
-                <span className="text-[10px] font-mono uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-semibold px-2 py-0.5 rounded">
+                <span className="text-[10px] font-mono uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-semibold px-2 py-0.5 rounded-full">
                   Mission Control
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
+              <p className="text-xs text-slate-600 dark:text-slate-400 hidden sm:block">
                 Operations Research & Kinetic Degradation Cold-Chain Optimizer
               </p>
             </div>
@@ -332,6 +401,8 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             {/* Live Indicator */}
             <div
+              role="status"
+              aria-live="polite"
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-medium border transition-all ${
                 loading
                   ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900"
@@ -361,7 +432,7 @@ export default function Dashboard() {
             <button
               onClick={fetchAllData}
               disabled={loading}
-              className="p-2 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 dark:text-slate-400 dark:hover:text-emerald-300 rounded-lg transition-colors cursor-pointer"
+              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-black/5 dark:hover:bg-white/10 dark:text-slate-300 dark:hover:text-white rounded-full transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               title="Refresh all inventory data"
               aria-label="Refresh all inventory data"
             >
@@ -380,13 +451,13 @@ export default function Dashboard() {
         {/* Top 5 KPI Grid */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* 1. Total Produce Tracked */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-[#0f1b14] border border-slate-200/80 dark:border-emerald-950 shadow-sm">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-mono">
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-xs font-medium">
               <span>Active Produce</span>
-              <Sprout className="w-4 h-4 text-emerald-600" />
+              <Sprout className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-slate-100">
+              <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-white">
                 {summary
                   ? `${(summary.total_produce_kg / 1000).toFixed(1)}k`
                   : "--"}
@@ -401,13 +472,13 @@ export default function Dashboard() {
           </div>
 
           {/* 2. Remaining Shelf Life */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-[#0f1b14] border border-slate-200/80 dark:border-emerald-950 shadow-sm">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-mono">
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-xs font-medium">
               <span>Avg Shelf Life</span>
-              <Clock className="w-4 h-4 text-amber-600" />
+              <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-slate-100">
+              <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-white">
                 {summary ? `${summary.avg_remaining_shelf_life_days}d` : "--"}
               </span>
               <span className="text-xs text-slate-500 font-mono">average</span>
@@ -420,13 +491,13 @@ export default function Dashboard() {
           </div>
 
           {/* 3. Buyer Demand */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-[#0f1b14] border border-slate-200/80 dark:border-emerald-950 shadow-sm">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-mono">
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-xs font-medium">
               <span>Buyer Demand</span>
-              <Warehouse className="w-4 h-4 text-blue-600" />
+              <Warehouse className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-slate-100">
+              <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-white">
                 {summary
                   ? `${(summary.buyer_demand.total_demand_kg / 1000).toFixed(1)}k`
                   : "--"}
@@ -445,13 +516,13 @@ export default function Dashboard() {
           </div>
 
           {/* 4. Storage Availability */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-[#0f1b14] border border-slate-200/80 dark:border-emerald-950 shadow-sm">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-mono">
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-xs font-medium">
               <span>Cold Storage</span>
-              <ThermometerSnowflake className="w-4 h-4 text-purple-600" />
+              <ThermometerSnowflake className="w-4 h-4 text-purple-600 dark:text-purple-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-slate-100">
+              <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-white">
                 {summary ? `${summary.storage.utilization_pct}%` : "--"}
               </span>
               <span className="text-xs text-slate-500 font-mono">utilized</span>
@@ -466,13 +537,13 @@ export default function Dashboard() {
           </div>
 
           {/* 5. Transport Fleet Payload */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-[#0f1b14] border border-slate-200/80 dark:border-emerald-950 shadow-sm">
-            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-mono">
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#1C1C1E] border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-xs font-medium">
               <span>Vehicle Fleet</span>
-              <Truck className="w-4 h-4 text-teal-600" />
+              <Truck className="w-4 h-4 text-teal-600 dark:text-teal-400" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-slate-100">
+              <span className="text-2xl font-extrabold font-mono text-slate-900 dark:text-white">
                 {summary
                   ? `${(summary.vehicles.total_payload_kg / 1000).toFixed(1)}k`
                   : "--"}
@@ -487,84 +558,48 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-2">
-          <div className="flex items-center gap-2">
-            {[
-              {
-                id: "overview",
-                label: "Mission Control (Overview)",
-                icon: Activity,
-              },
-              {
-                id: "distribution",
-                label: `Distribution Engine (${distributionPlan?.recommendations.length ?? 0})`,
-                icon: Route,
-              },
-              {
-                id: "rerouting",
-                label: "Dynamic Rerouting",
-                icon: Navigation,
-              },
-              {
-                id: "secondary",
-                label: "Secondary Arbitrage",
-                icon: Scale,
-              },
-              {
-                id: "spoilage",
-                label: "Arrhenius Spoilage Engine",
-                icon: Flame,
-              },
-              {
-                id: "batches",
-                label: `Produce Batches (${batches.length})`,
-                icon: Sprout,
-              },
-              {
-                id: "buyers",
-                label: `Buyer Demand (${buyers.length})`,
-                icon: Warehouse,
-              },
-              {
-                id: "storage",
-                label: `Cold Storage (${storages.length})`,
-                icon: ThermometerSnowflake,
-              },
-              {
-                id: "vehicles",
-                label: `Vehicle Fleet (${vehicles.length})`,
-                icon: Truck,
-              },
-            ].map((tab) => {
+        {/* Navigation Tabs (iOS Segmented Control Style) */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-2">
+          <nav
+            role="tablist"
+            aria-label="Operations Navigation"
+            className="p-1.5 bg-black/[0.04] dark:bg-white/[0.08] border border-black/[0.04] dark:border-white/[0.08] rounded-2xl flex flex-wrap items-center gap-1 shadow-xs"
+          >
+            {tabsConfig.map((tab, idx) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
+                  id={`tab-${tab.id}`}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`panel-${tab.id}`}
+                  tabIndex={isActive ? 0 : -1}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer ${
+                  onKeyDown={(e) => handleTabKeyDown(e, idx)}
+                  className={`inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                     isActive
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      ? "bg-white dark:bg-[#2C2C2E] text-slate-900 dark:text-white shadow-sm font-bold border border-black/[0.04] dark:border-white/[0.08]"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-4 h-4 stroke-[2]" aria-hidden="true" />
                   <span>{tab.label}</span>
                 </button>
               );
             })}
-          </div>
+          </nav>
 
           <div className="flex items-center gap-2">
             {activeTab === "distribution" && (
               <button
                 onClick={runDistributionOptimization}
                 disabled={optimizing}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-sm transition-all cursor-pointer"
               >
                 <Zap
-                  className={`w-3.5 h-3.5 ${
+                  className={`w-4 h-4 ${
                     optimizing ? "animate-spin text-amber-300" : ""
                   }`}
                 />
@@ -577,9 +612,9 @@ export default function Dashboard() {
             {activeTab === "batches" && (
               <button
                 onClick={() => setCreateModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-sm transition-all cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 stroke-[2.5]" />
                 <span>Register Produce Batch</span>
               </button>
             )}
@@ -588,13 +623,31 @@ export default function Dashboard() {
 
         {/* TAB: MISSION CONTROL OVERVIEW (STEP 8) */}
         {activeTab === "overview" && (
-          <IntegratedMissionControl
-            onNavigateToTab={(tab) => setActiveTab(tab as typeof activeTab)}
-          />
+          <div
+            id="panel-overview"
+            role="tabpanel"
+            aria-labelledby="tab-overview"
+            tabIndex={0}
+            className="focus:outline-none"
+          >
+            <IntegratedMissionControl
+              onNavigateToTab={(tab) => setActiveTab(tab as typeof activeTab)}
+            />
+          </div>
         )}
 
         {/* TAB: DYNAMIC REROUTING (STEP 6) */}
-        {activeTab === "rerouting" && <DynamicReroutingView />}
+        {activeTab === "rerouting" && (
+          <div
+            id="panel-rerouting"
+            role="tabpanel"
+            aria-labelledby="tab-rerouting"
+            tabIndex={0}
+            className="focus:outline-none"
+          >
+            <DynamicReroutingView />
+          </div>
+        )}
 
         {/* TAB: SECONDARY-MARKET RECOVERY (STEP 7) */}
         {activeTab === "secondary" && <SecondaryRecoveryView />}
