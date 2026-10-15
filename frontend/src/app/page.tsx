@@ -360,45 +360,41 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F2F2F7] text-slate-900 dark:bg-[#000000] dark:text-white transition-colors">
-      {/* Top Hackathon Banner */}
-      <div className="bg-emerald-950 text-emerald-200 border-b border-emerald-900 px-4 py-2 text-xs font-mono flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-semibold text-emerald-100">BYTEATHON 2026</span>
-          <span className="text-emerald-500">|</span>
-          <span>Track BYTE01: Intelligent Post-Harvest Loss Prevention</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-emerald-400">Codename: HARVEST ZERO</span>
-          <span className="bg-emerald-800/80 text-emerald-200 px-2.5 py-0.5 rounded-full text-[11px] font-medium border border-emerald-700/50">
-            Step 9: Testing & Benchmarks Verified
-          </span>
-        </div>
-      </div>
-
-      {/* Main Header (iOS Liquid Glass Material) */}
+      {/* Proper Apple HIG Navigation Bar (Sticky with Liquid Glass material) */}
       <header className="sticky top-0 z-40 ios-glass-bar shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Top Brand & Actions Bar */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          {/* Brand Identity */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-700/20">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-700/20 shrink-0">
               <Sprout className="w-6 h-6 stroke-[2.2]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">
+                <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">
                   HARVEST ZERO
                 </span>
-                <span className="text-[10px] font-mono uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-semibold px-2 py-0.5 rounded-full">
-                  Mission Control
+                <span className="text-[10px] font-mono uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-semibold px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                  Operations Control
                 </span>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400 hidden sm:block">
-                Operations Research & Kinetic Degradation Cold-Chain Optimizer
+                Intelligent Post-Harvest Loss Prevention & Kinetic Logistics
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Quick Actions & System Status */}
+          <div className="flex items-center gap-2.5">
+            {/* Quick Register Produce Action */}
+            <button
+              onClick={() => setCreateModalOpen(true)}
+              className="hidden md:inline-flex items-center gap-2 min-h-[38px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>Register Batch</span>
+            </button>
+
             {/* Live Indicator */}
             <div
               role="status"
@@ -420,15 +416,16 @@ export default function Dashboard() {
                     : "bg-rose-500"
                 }`}
               />
-              <span>
+              <span className="hidden sm:inline">
                 {loading
                   ? "Optimizing..."
                   : health?.status === "healthy"
-                  ? `Supabase + Engine (${latency}ms)`
+                  ? `Engine Active (${latency}ms)`
                   : "Disconnected"}
               </span>
             </div>
 
+            {/* Refresh Button */}
             <button
               onClick={fetchAllData}
               disabled={loading}
@@ -442,6 +439,60 @@ export default function Dashboard() {
                 }`}
               />
             </button>
+          </div>
+        </div>
+
+        {/* Sub-Navigation: iOS Segmented Control Tab Bar */}
+        <div className="border-t border-black/[0.04] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto flex items-center justify-between gap-4 scrollbar-none">
+            <nav
+              role="tablist"
+              aria-label="Platform Navigation"
+              className="flex items-center gap-1 shrink-0"
+            >
+              {tabsConfig.map((tab, idx) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    id={`tab-${tab.id}`}
+                    role="tab"
+                    aria-selected={isActive}
+                    aria-controls={`panel-${tab.id}`}
+                    tabIndex={isActive ? 0 : -1}
+                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                    onKeyDown={(e) => handleTabKeyDown(e, idx)}
+                    className={`inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 shrink-0 ${
+                      isActive
+                        ? "bg-white dark:bg-[#2C2C2E] text-slate-900 dark:text-white shadow-xs font-bold border border-black/[0.06] dark:border-white/[0.08]"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5 stroke-[2]" aria-hidden="true" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Contextual Action Button */}
+            {activeTab === "distribution" && (
+              <button
+                onClick={runDistributionOptimization}
+                disabled={optimizing}
+                className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer shrink-0"
+              >
+                <Zap
+                  className={`w-3.5 h-3.5 ${
+                    optimizing ? "animate-spin text-amber-300" : ""
+                  }`}
+                />
+                <span>
+                  {optimizing ? "Computing..." : "Re-Run Optimization"}
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -558,70 +609,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Navigation Tabs (iOS Segmented Control Style) */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-2">
-          <nav
-            role="tablist"
-            aria-label="Operations Navigation"
-            className="p-1.5 bg-black/[0.04] dark:bg-white/[0.08] border border-black/[0.04] dark:border-white/[0.08] rounded-2xl flex flex-wrap items-center gap-1 shadow-xs"
-          >
-            {tabsConfig.map((tab, idx) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  id={`tab-${tab.id}`}
-                  role="tab"
-                  aria-selected={isActive}
-                  aria-controls={`panel-${tab.id}`}
-                  tabIndex={isActive ? 0 : -1}
-                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  onKeyDown={(e) => handleTabKeyDown(e, idx)}
-                  className={`inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-                    isActive
-                      ? "bg-white dark:bg-[#2C2C2E] text-slate-900 dark:text-white shadow-sm font-bold border border-black/[0.04] dark:border-white/[0.08]"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
-                  }`}
-                >
-                  <Icon className="w-4 h-4 stroke-[2]" aria-hidden="true" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            {activeTab === "distribution" && (
-              <button
-                onClick={runDistributionOptimization}
-                disabled={optimizing}
-                className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-sm transition-all cursor-pointer"
-              >
-                <Zap
-                  className={`w-4 h-4 ${
-                    optimizing ? "animate-spin text-amber-300" : ""
-                  }`}
-                />
-                <span>
-                  {optimizing ? "Computing Plan..." : "Re-Run Optimization"}
-                </span>
-              </button>
-            )}
-
-            {activeTab === "batches" && (
-              <button
-                onClick={() => setCreateModalOpen(true)}
-                className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-sm transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4 stroke-[2.5]" />
-                <span>Register Produce Batch</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* TAB: MISSION CONTROL OVERVIEW (STEP 8) */}
+        {/* TAB: MISSION CONTROL OVERVIEW */}
         {activeTab === "overview" && (
           <div
             id="panel-overview"
@@ -636,7 +624,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* TAB: DYNAMIC REROUTING (STEP 6) */}
+        {/* TAB: DYNAMIC REROUTING */}
         {activeTab === "rerouting" && (
           <div
             id="panel-rerouting"
@@ -649,13 +637,13 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* TAB: SECONDARY-MARKET RECOVERY (STEP 7) */}
+        {/* TAB: SECONDARY-MARKET RECOVERY */}
         {activeTab === "secondary" && <SecondaryRecoveryView />}
 
-        {/* TAB: SPOILAGE-RISK ENGINE (STEP 5) */}
+        {/* TAB: SPOILAGE-RISK ENGINE */}
         {activeTab === "spoilage" && <SpoilageSimulator />}
 
-        {/* TAB 1: DISTRIBUTION ENGINE (STEP 4) */}
+        {/* TAB: DISTRIBUTION ENGINE */}
         {activeTab === "distribution" && (
           <div className="space-y-6">
             {/* Optimization Financial Banner */}
@@ -1292,10 +1280,10 @@ export default function Dashboard() {
       />
 
       {/* Footer */}
-      <footer className="mt-16 border-t border-slate-200 dark:border-emerald-950 py-6 text-center text-xs text-slate-500 dark:text-slate-400 font-mono">
-        <p>HARVEST ZERO © 2026 — Built for BYTEATHON 2026 Grand Finale</p>
+      <footer className="mt-16 border-t border-slate-200/80 dark:border-white/10 py-6 text-center text-xs text-slate-500 dark:text-slate-400 font-mono">
+        <p>HARVEST ZERO © 2026 — Intelligent Post-Harvest Loss Prevention & Kinetic Cold-Chain Logistics</p>
         <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
-          Department of CSE, Noorul Islam Centre for Higher Education
+          Decision Support Platform for Farmers, Transport Fleets & Multi-Tier Agro Buyers
         </p>
       </footer>
     </div>

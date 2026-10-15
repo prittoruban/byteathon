@@ -148,7 +148,7 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-700/80 text-emerald-300 text-xs font-mono font-medium mb-3">
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              Integrated Mission Control & Dynamic Pipeline (Step 8)
+              Operations Command & Dynamic Intelligence
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
               HARVEST ZERO Operations Command
@@ -442,7 +442,7 @@ export function IntegratedMissionControl({ onNavigateToTab }: IntegratedMissionC
             <div>
               <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-700/60 text-emerald-300 text-[11px] font-mono font-semibold mb-2">
                 <Award className="w-3.5 h-3.5 text-emerald-400" />
-                Step 9: Rigorous Benchmark Verification (Operations Research vs Baseline)
+                Operations Research Performance Benchmark (Dynamic Optimization vs Baseline)
               </div>
               <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
                 <Scale className="w-5 h-5 text-emerald-400" />

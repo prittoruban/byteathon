@@ -563,7 +563,7 @@ export function SpoilageSimulator() {
                       <div>
                         <h4 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
                           {assessment.is_reroute_recommended
-                            ? "DYNAMIC REROUTE MANDATORY (Step 6 Trigger)"
+                            ? "DYNAMIC REROUTE MANDATORY (Thermal Breakdown Detected)"
                             : "Transit Schedule Viable"}
                           <span
                             className={`text-[10px] font-mono px-2 py-0.5 rounded ${
@@ -654,7 +654,7 @@ export function SpoilageSimulator() {
                     Refrigeration Breakdown Simulation Results
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Step 5 Verification: Arrhenius acceleration under +26°C thermal stress
+                    Arrhenius kinetic degradation acceleration under +26°C thermal stress
                   </p>
                 </div>
               </div>

@@ -241,7 +241,7 @@ export function SecondaryRecoveryView() {
                 <Scale className="w-4 h-4 text-emerald-400" />
                 Arbitrage Simulation Inputs
               </h3>
-              <span className="text-xs font-mono text-slate-400">Step 7 Protocol</span>
+              <span className="text-xs font-mono text-emerald-400/90 font-medium">Quality Arbitrage Engine</span>
             </div>
 
             {/* Commodity Selector */}
