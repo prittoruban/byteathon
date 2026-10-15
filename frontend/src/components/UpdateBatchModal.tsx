@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Edit3, Loader2 } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 
 interface BatchItem {
   id: string;
@@ -113,32 +113,27 @@ export function UpdateBatchModal({
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-[#1C1C1E] border-t sm:border border-slate-200/80 dark:border-white/10 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-6 shadow-2xl relative"
+        className="bg-[#18181A] border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-white"
         onClick={(e) => e.stopPropagation()}
       >
         {/* iOS Sheet Grabber Handle */}
-        <div className="w-10 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700 mx-auto mb-3 sm:hidden" aria-hidden="true" />
+        <div className="w-10 h-1.5 rounded-full bg-neutral-700 mx-auto mb-3 sm:hidden" aria-hidden="true" />
 
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/10">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 flex items-center justify-center shadow-xs">
-              <Edit3 className="w-5 h-5 stroke-[2.2]" aria-hidden="true" />
-            </div>
-            <div>
-              <h2
-                id="update-modal-title"
-                className="text-base font-bold text-slate-900 dark:text-white"
-              >
-                Update Batch: {batch.crop_type} ({batch.quantity_kg.toLocaleString()} kg)
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-slate-300">
-                Adjust inventory status, remaining shelf life, and storage method
-              </p>
-            </div>
+        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+          <div>
+            <h2
+              id="update-modal-title"
+              className="text-base font-semibold text-white tracking-tight"
+            >
+              Update Batch: {batch.crop_type} ({batch.quantity_kg.toLocaleString()} kg)
+            </h2>
+            <p className="text-xs text-neutral-400 mt-0.5">
+              Adjust inventory status, remaining shelf life, and storage method
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-full transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            className="p-2 text-neutral-400 hover:text-white rounded-full transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" aria-hidden="true" />
@@ -148,17 +143,17 @@ export function UpdateBatchModal({
         {error && (
           <div
             role="alert"
-            className="mt-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 font-medium"
+            className="mt-4 p-3 rounded-xl bg-rose-950/40 border border-rose-900 text-xs text-rose-300 font-medium"
           >
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-xs font-mono">
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-sm font-sans">
           <div>
             <label
               htmlFor="update-batch-status"
-              className="block text-slate-800 dark:text-slate-200 font-semibold mb-1"
+              className="block text-neutral-300 font-medium mb-1 text-xs"
             >
               Consignment Status
             </label>
@@ -166,7 +161,7 @@ export function UpdateBatchModal({
               id="update-batch-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
+              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer text-sm"
             >
               <option value="harvested">Harvested (Ready at farm)</option>
               <option value="in_storage">In Storage (Buffer facility)</option>
@@ -180,7 +175,7 @@ export function UpdateBatchModal({
           <div>
             <label
               htmlFor="update-batch-shelflife"
-              className="block text-slate-800 dark:text-slate-200 font-semibold mb-1"
+              className="block text-neutral-300 font-medium mb-1 text-xs"
             >
               Remaining Shelf Life (days)
             </label>
@@ -193,9 +188,9 @@ export function UpdateBatchModal({
               value={remainingShelfLife}
               onChange={(e) => setRemainingShelfLife(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 text-sm"
             />
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">
+            <p className="text-xs text-neutral-400 mt-1 font-medium">
               Initial: {batch.initial_shelf_life_days} days
             </p>
           </div>
@@ -203,7 +198,7 @@ export function UpdateBatchModal({
           <div>
             <label
               htmlFor="update-batch-storage"
-              className="block text-slate-800 dark:text-slate-200 font-semibold mb-1"
+              className="block text-neutral-300 font-medium mb-1 text-xs"
             >
               Storage Condition
             </label>
@@ -211,7 +206,7 @@ export function UpdateBatchModal({
               id="update-batch-storage"
               value={storageCondition}
               onChange={(e) => setStorageCondition(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
+              className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#242426] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer text-sm"
             >
               <option value="ambient_heap">Ambient Heap</option>
               <option value="ventilated_shed">Ventilated Shed</option>
@@ -219,12 +214,12 @@ export function UpdateBatchModal({
             </select>
           </div>
 
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-white/10">
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-5 py-2.5 rounded-xl min-h-[44px] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 font-medium transition-colors cursor-pointer"
+              className="px-5 py-2.5 rounded-xl min-h-[44px] text-neutral-400 hover:text-white hover:bg-white/10 font-medium transition-colors cursor-pointer"
             >
               Cancel
             </button>

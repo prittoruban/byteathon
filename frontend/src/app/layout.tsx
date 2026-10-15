@@ -17,7 +17,7 @@ const firaCode = Fira_Code({
 });
 
 export const metadata: Metadata = {
-  title: "HARVEST ZERO — Intelligent Post-Harvest Loss Prevention",
+  title: "HARVEST ZERO: Post-Harvest Loss Prevention Platform",
   description:
     "Decision-support platform connecting farmers, storage facilities, transport operators, and buyers to eliminate agricultural waste and optimize perishables distribution.",
 };
@@ -28,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${firaSans.variable} ${firaCode.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`${firaSans.variable} ${firaCode.variable} dark h-full antialiased bg-black text-white`}>
+      <body className="min-h-full flex flex-col bg-black text-white">{children}</body>
     </html>
   );
 }

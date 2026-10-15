@@ -1,85 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  /* iOS System Palette (Light Appearance) */
-  --ios-system-background: #F2F2F7;
-  --ios-secondary-background: #FFFFFF;
-  --ios-tertiary-background: #E5E5EA;
-  --ios-grouped-background: #F2F2F7;
-  --ios-secondary-grouped-background: #FFFFFF;
+  /* Apple Pro System Palette (Dedicated Dark Appearance) */
+  --ios-system-background: #000000;
+  --ios-secondary-background: #161618;
+  --ios-tertiary-background: #242426;
+  --ios-grouped-background: #000000;
+  --ios-secondary-grouped-background: #161618;
 
-  --ios-label-primary: #000000;
-  --ios-label-secondary: #3C3C43;
-  --ios-label-tertiary: #6E6E73;
-  --ios-separator: rgba(60, 60, 67, 0.18);
-  --ios-separator-opaque: #C6C6C8;
+  --ios-label-primary: #FFFFFF;
+  --ios-label-secondary: rgba(235, 235, 245, 0.65);
+  --ios-label-tertiary: rgba(235, 235, 245, 0.35);
+  --ios-separator: rgba(255, 255, 255, 0.08);
+  --ios-separator-opaque: #2C2C2E;
 
   /* Apple HIG Accent Colors */
-  --ios-green: #34C759;
-  --ios-green-tint: rgba(52, 199, 89, 0.14);
-  --ios-blue: #007AFF;
-  --ios-blue-tint: rgba(0, 122, 255, 0.12);
-  --ios-orange: #FF9500;
-  --ios-orange-tint: rgba(255, 149, 0, 0.14);
-  --ios-red: #FF3B30;
-  --ios-red-tint: rgba(255, 59, 48, 0.14);
-  --ios-indigo: #5856D6;
-  --ios-yellow: #FFCC00;
+  --ios-green: #30D158;
+  --ios-green-tint: rgba(48, 209, 88, 0.16);
+  --ios-blue: #0A84FF;
+  --ios-blue-tint: rgba(10, 132, 255, 0.16);
+  --ios-orange: #FF9F0A;
+  --ios-orange-tint: rgba(255, 159, 10, 0.16);
+  --ios-red: #FF453A;
+  --ios-red-tint: rgba(255, 69, 58, 0.16);
+  --ios-indigo: #5E5CE6;
+  --ios-yellow: #FFD60A;
 
-  --color-primary: #15803d;
-  --color-on-primary: #ffffff;
-  --color-background: var(--ios-system-background);
-  --color-foreground: var(--ios-label-primary);
-  --color-card: var(--ios-secondary-grouped-background);
-  --color-card-foreground: var(--ios-label-primary);
-  --color-muted: var(--ios-tertiary-background);
-  --color-muted-foreground: var(--ios-label-secondary);
-  --color-border: var(--ios-separator);
+  --color-primary: #30D158;
+  --color-on-primary: #000000;
+  --color-background: #000000;
+  --color-foreground: #FFFFFF;
+  --color-card: #161618;
+  --color-card-foreground: #FFFFFF;
+  --color-muted: #242426;
+  --color-muted-foreground: rgba(235, 235, 245, 0.65);
+  --color-border: rgba(255, 255, 255, 0.08);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.08);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* iOS System Palette (Dark Appearance) */
-    --ios-system-background: #000000;
-    --ios-secondary-background: #1C1C1E;
-    --ios-tertiary-background: #2C2C2E;
-    --ios-grouped-background: #000000;
-    --ios-secondary-grouped-background: #1C1C1E;
-
-    --ios-label-primary: #FFFFFF;
-    --ios-label-secondary: #EBEBF5;
-    --ios-label-tertiary: #98989D;
-    --ios-separator: rgba(255, 255, 255, 0.12);
-    --ios-separator-opaque: #38383A;
-
-    --ios-green: #30D158;
-    --ios-green-tint: rgba(48, 209, 88, 0.18);
-    --ios-blue: #0A84FF;
-    --ios-blue-tint: rgba(10, 132, 255, 0.18);
-    --ios-orange: #FF9F0A;
-    --ios-orange-tint: rgba(255, 159, 10, 0.18);
-    --ios-red: #FF453A;
-    --ios-red-tint: rgba(255, 69, 58, 0.18);
-
-    --color-primary: #22c55e;
-    --color-on-primary: #000000;
-    --color-background: var(--ios-system-background);
-    --color-foreground: var(--ios-label-primary);
-    --color-card: var(--ios-secondary-grouped-background);
-    --color-card-foreground: var(--ios-label-primary);
-    --color-muted: var(--ios-tertiary-background);
-    --color-muted-foreground: var(--ios-label-secondary);
-    --color-border: var(--ios-separator);
-  }
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.8);
 }
 
 body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
+  background-color: #000000;
+  color: #FFFFFF;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", var(--font-fira-sans), system-ui, sans-serif;
   margin: 0;
   padding: 0;
@@ -94,17 +58,10 @@ code, pre, .font-mono {
 
 /* Apple HIG: Liquid Glass & Functional Material Surface */
 .ios-glass-bar {
-  background-color: rgba(255, 255, 255, 0.82);
+  background-color: rgba(18, 18, 20, 0.85);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-bottom: 1px solid var(--ios-separator);
-}
-
-@media (prefers-color-scheme: dark) {
-  .ios-glass-bar {
-    background-color: rgba(28, 28, 30, 0.82);
-    border-bottom: 1px solid var(--ios-separator);
-  }
 }
 
 /* Apple Inset Grouped Card */
