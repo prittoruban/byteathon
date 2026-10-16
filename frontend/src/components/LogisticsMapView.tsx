@@ -132,24 +132,24 @@ function str(val: any): string {
 /* ------------------------------------------------------------------ */
 
 interface LogisticsMapViewProps {
-  recommendations: any[];
-  batches: any[];
-  buyers: any[];
-  vehicles: any[];
-  storages: any[];
-  workflowData: any | null;
+  recommendations?: any[];
+  batches?: any[];
+  buyers?: any[];
+  vehicles?: any[];
+  storages?: any[];
+  workflowData?: any | null;
   onNavigateToTab?: (tab: string) => void;
 }
 
 export function LogisticsMapView({
-  recommendations,
-  batches,
-  buyers,
-  vehicles,
-  storages,
-  workflowData,
+  recommendations = [],
+  batches = [],
+  buyers = [],
+  vehicles = [],
+  storages = [],
+  workflowData = null,
   onNavigateToTab,
-}: LogisticsMapViewProps) {
+}: LogisticsMapViewProps = {}) {
   /* -------- Build coordinate lookup maps -------- */
   const farmerCoords = useMemo(
     () => {

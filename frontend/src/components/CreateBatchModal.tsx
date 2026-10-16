@@ -13,8 +13,14 @@ interface FarmerOption {
 interface CreateBatchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (newBatchId?: string) => void;
   backendUrl: string;
+  currentFarmer?: {
+    id: string;
+    name: string;
+    pmKisanId?: string;
+    location?: string;
+  } | null;
 }
 
 const CROP_PRESETS: Record<string, { shelfLife: number; defaultStorage: string }> = {
@@ -30,6 +36,7 @@ export function CreateBatchModal({
   onClose,
   onSuccess,
   backendUrl,
+  currentFarmer,
 }: CreateBatchModalProps) {
   const [farmers, setFarmers] = useState<FarmerOption[]>([]);
   const [farmerId, setFarmerId] = useState<string>("");
@@ -49,13 +56,18 @@ export function CreateBatchModal({
 
   useEffect(() => {
     if (isOpen) {
+      if (currentFarmer?.id) {
+        setFarmerId(currentFarmer.id);
+      }
       // Fetch available farmers
       fetch(`${backendUrl}/api/farmers`)
         .then((res) => res.json())
         .then((data: FarmerOption[]) => {
           if (Array.isArray(data) && data.length > 0) {
             setFarmers(data);
-            setFarmerId(data[0].id);
+            if (!currentFarmer?.id) {
+              setFarmerId(data[0].id);
+            }
           }
         })
         .catch((err) => console.error("Failed to load farmers:", err));
@@ -129,7 +141,8 @@ export function CreateBatchModal({
         throw new Error(errorData.detail || "Failed to register batch");
       }
 
-      onSuccess();
+      const createdData = await res.json();
+      onSuccess(createdData?.id);
       onClose();
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -190,26 +203,45 @@ export function CreateBatchModal({
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-sm font-sans">
           {/* Farmer */}
-          <div>
-            <label
-              htmlFor="create-batch-farmer"
-              className="block text-[#1D1D1F] font-semibold mb-1 text-xs"
-            >
-              किसान का नाम (Farmer Producer)
-            </label>
-            <select
-              id="create-batch-farmer"
-              value={farmerId}
-              onChange={(e) => setFarmerId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-[#F8F9FA] text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41] cursor-pointer text-sm"
-            >
-              {farmers.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name} ({f.location}, {f.storage_type})
-                </option>
-              ))}
-            </select>
-          </div>
+          {currentFarmer ? (
+            <div className="p-3.5 rounded-2xl bg-[#E8F5E9] border border-[#C8E6C9] flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">👨‍🌾</span>
+                <div>
+                  <div className="text-xs font-bold text-[#107C41]">
+                    प्रमाणित किसान: {currentFarmer.name}
+                  </div>
+                  <div className="text-[11px] text-[#4B5563]">
+                    PM-KISAN ID: <span className="font-mono font-bold">{currentFarmer.pmKisanId || "PMK-9876543210"}</span> • {currentFarmer.location || "Nashik Cluster North"}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#107C41] text-white">
+                सत्यापित
+              </span>
+            </div>
+          ) : (
+            <div>
+              <label
+                htmlFor="create-batch-farmer"
+                className="block text-[#1D1D1F] font-semibold mb-1 text-xs"
+              >
+                किसान का नाम (Farmer Producer)
+              </label>
+              <select
+                id="create-batch-farmer"
+                value={farmerId}
+                onChange={(e) => setFarmerId(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-[#F8F9FA] text-[#1D1D1F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41] cursor-pointer text-sm"
+              >
+                {farmers.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name} ({f.location}, {f.storage_type})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Quick Visual Crop Selection (One-tap for farmers) */}
           <div>

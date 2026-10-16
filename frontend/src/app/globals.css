@@ -1,99 +1,48 @@
 @import "tailwindcss";
 
 :root {
-  /* Deck-DNA Apple Light System Palette */
-  --ios-system-background: #FBFBFD;
-  --ios-secondary-background: #FFFFFF;
-  --ios-tertiary-background: #F5F5F7;
-  --ios-grouped-background: #F5F5F7;
-  --ios-secondary-grouped-background: #FFFFFF;
-
-  --ios-label-primary: #1D1D1F;
-  --ios-label-secondary: #6E6E73;
-  --ios-label-tertiary: #86868B;
-  --ios-separator: rgba(0, 0, 0, 0.08);
-  --ios-separator-opaque: #E5E5EA;
-
-  /* Deck-DNA Semantic Accent Colors for Light Theme */
-  --ios-green: #107C41;
-  --ios-green-tint: rgba(16, 124, 65, 0.1);
-  --ios-blue: #0071E3;
-  --ios-blue-tint: rgba(0, 113, 227, 0.1);
-  --ios-orange: #B76E00;
-  --ios-orange-tint: rgba(183, 110, 0, 0.1);
-  --ios-red: #C62828;
-  --ios-red-tint: rgba(198, 40, 40, 0.1);
-
-  --color-primary: #107C41;
-  --color-on-primary: #FFFFFF;
-  --color-background: #FBFBFD;
-  --color-foreground: #1D1D1F;
-  --color-card: #FFFFFF;
-  --color-card-foreground: #1D1D1F;
-  --color-muted: #F5F5F7;
-  --color-muted-foreground: #6E6E73;
-  --color-border: rgba(0, 0, 0, 0.08);
-
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08);
+  --color-page: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+  --color-brand: #16a34a;
 }
 
+html,
 body {
-  background-color: #FBFBFD;
-  color: #1D1D1F;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", var(--font-fira-sans), system-ui, sans-serif;
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   margin: 0;
   padding: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
 }
 
-code, pre, .font-mono {
-  font-family: "SF Mono", var(--font-fira-code), Menlo, Monaco, Consolas, monospace;
+/* Ensure smooth touch scrolling for tables and horizontal containers */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
-/* Apple HIG: Liquid Glass & Functional Material Surface (Light) */
-.ios-glass-bar {
-  background-color: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-/* Deck-DNA Clean Elevated Card */
-.ios-card {
-  background-color: #FFFFFF;
-  border-radius: 1.25rem; /* 20px continuous squircle */
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Minimum Accessible Touch Target (iOS HIG 44x44pt) */
-.ios-touch-target {
-  min-height: 48px;
-  min-width: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+/* Prevent auto-zooming on focus in iOS Mobile Safari */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* Accessible Focus Ring */
 :focus-visible {
-  outline: 2px solid #107C41;
+  outline: 2px solid #16a34a;
   outline-offset: 2px;
-}
-
-/* Print optimizations */
-@media print {
-  body {
-    background-color: #FFFFFF;
-    color: #000000;
-  }
-  .ios-glass-bar {
-    background-color: #FFFFFF;
-    border-bottom: 1px solid #CCCCCC;
-  }
 }

@@ -18,12 +18,57 @@ import {
   Sun,
   ShieldCheck,
   HelpCircle,
+  User,
+  LogIn,
+  LogOut,
+  CheckCircle2,
+  Sparkles,
+  KeyRound,
+  Shield,
+  Award,
 } from "lucide-react";
 
 export type FarmerLanguage = "hi" | "ta" | "en";
 
+export interface FarmerProfile {
+  id: string;
+  name: string;
+  pmKisanId: string;
+  phone: string;
+  location: string;
+  storageType?: string;
+}
+
+export const PRESET_FARMERS: FarmerProfile[] = [
+  {
+    id: "92066deb-ff6f-4b6d-9578-3cb5879737e1",
+    name: "Ramesh Patel (Greenfield Farms)",
+    pmKisanId: "PMK-9876543210",
+    phone: "+91-9876543210",
+    location: "Nashik Cluster North",
+    storageType: "ambient_heap",
+  },
+  {
+    id: "a15e6b3d-efb1-49b6-8541-cba4cb1d08c0",
+    name: "Kavitha Reddy (Deccan Organics)",
+    pmKisanId: "PMK-9876543211",
+    phone: "+91-9876543211",
+    location: "Pune Rural Sector 4",
+    storageType: "ventilated_shed",
+  },
+  {
+    id: "5bbadef1-f99b-497d-a1ce-bcb8f52bd332",
+    name: "Sukhwinder Singh (Kisan Producer Co)",
+    pmKisanId: "PMK-9876543212",
+    phone: "+91-9876543212",
+    location: "Nagpur Agri Zone",
+    storageType: "cold_storage",
+  },
+];
+
 interface ProduceBatch {
   id: string;
+  farmer_id?: string;
   crop_type: string;
   quantity_kg: number;
   initial_shelf_life_days: number;
@@ -31,6 +76,10 @@ interface ProduceBatch {
   storage_condition: string;
   status: string;
   harvest_date: string;
+  farmers?: {
+    name: string;
+    location: string;
+  };
 }
 
 interface AllocationRec {
@@ -72,6 +121,12 @@ interface FarmerViewProps {
   onRefresh: () => void;
   loading: boolean;
   onSwitchToManager: () => void;
+  language?: FarmerLanguage;
+  onLanguageChange?: (lang: FarmerLanguage) => void;
+  currentFarmer: FarmerProfile | null;
+  onFarmerLogin: (farmer: FarmerProfile) => void;
+  onFarmerLogout: () => void;
+  lastAddedBatchId?: string | null;
 }
 
 const TRANSLATIONS = {
@@ -232,12 +287,73 @@ export function FarmerView({
   onRefresh,
   loading,
   onSwitchToManager,
+  language: propLang,
+  onLanguageChange,
+  currentFarmer,
+  onFarmerLogin,
+  onFarmerLogout,
+  lastAddedBatchId,
 }: FarmerViewProps) {
-  const [lang, setLang] = useState<FarmerLanguage>("hi");
+  const [internalLang, setInternalLang] = useState<FarmerLanguage>("hi");
+  const lang = propLang || internalLang;
+  const setLang = (l: FarmerLanguage) => {
+    setInternalLang(l);
+    onLanguageChange?.(l);
+  };
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [bookedStorageId, setBookedStorageId] = useState<string | null>(null);
 
+  // PM-KISAN login states
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(!currentFarmer);
+  const [pmKisanNumber, setPmKisanNumber] = useState<string>("");
+  const [pmKisanPassword, setPmKisanPassword] = useState<string>("");
+  const [authSuccessToast, setAuthSuccessToast] = useState<string | null>(null);
+
   const t = TRANSLATIONS[lang];
+
+  const handleQuickLogin = (farmer: FarmerProfile) => {
+    onFarmerLogin(farmer);
+    setShowLoginModal(false);
+    const msg =
+      lang === "hi"
+        ? `स्वागत है, ${farmer.name}! PM-KISAN पहचान सत्यापित।`
+        : lang === "ta"
+        ? `வரவேற்கிறோம், ${farmer.name}! PM-KISAN சரிபார்க்கப்பட்டது.`
+        : `Welcome, ${farmer.name}! PM-KISAN identity verified.`;
+    setAuthSuccessToast(msg);
+    setTimeout(() => setAuthSuccessToast(null), 4500);
+  };
+
+  const handleCustomLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanNumber = pmKisanNumber.trim() || "PMK-9876543210";
+
+    // Match existing preset if available
+    const matched = PRESET_FARMERS.find(
+      (p) =>
+        p.pmKisanId.toLowerCase() === cleanNumber.toLowerCase() ||
+        p.phone.includes(cleanNumber) ||
+        p.name.toLowerCase().includes(cleanNumber.toLowerCase())
+    );
+
+    const farmerToSet: FarmerProfile = matched || {
+      id: "92066deb-ff6f-4b6d-9578-3cb5879737e1",
+      name: cleanNumber.startsWith("PMK") ? `Farmer (${cleanNumber})` : `Kisan Patel (${cleanNumber})`,
+      pmKisanId: cleanNumber.toUpperCase().startsWith("PMK") ? cleanNumber.toUpperCase() : `PMK-${cleanNumber}`,
+      phone: cleanNumber.length >= 10 ? `+91-${cleanNumber.slice(-10)}` : "+91-9876543210",
+      location: "Nashik Cluster North",
+      storageType: "ambient_heap",
+    };
+
+    onFarmerLogin(farmerToSet);
+    setShowLoginModal(false);
+    const msg =
+      lang === "hi"
+        ? `सत्यापित! PM-KISAN ID: ${farmerToSet.pmKisanId} से लॉगिन पूर्ण।`
+        : `Signed in successfully with PM-KISAN ID: ${farmerToSet.pmKisanId}`;
+    setAuthSuccessToast(msg);
+    setTimeout(() => setAuthSuccessToast(null), 4500);
+  };
 
   // Helper for speech synthesis
   const speakText = (text: string) => {
@@ -390,7 +506,205 @@ export function FarmerView({
         </div>
       </div>
 
-      {/* 2. WEATHER & HEAT STRESS ADVISORY */}
+      {/* 2. PM-KISAN VERIFIED IDENTITY BAR / AUTHENTICATION PORTAL */}
+      {currentFarmer && !showLoginModal ? (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#F4FBF7] via-white to-[#F4FBF7] border-2 border-[#C8E6C9] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#E8F5E9] border border-[#C8E6C9] flex items-center justify-center text-2xl shrink-0 shadow-xs">
+              👨‍🌾
+            </div>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#107C41] text-white tracking-wider uppercase">
+                  🇮🇳 PM-KISAN प्रमाणित
+                </span>
+                <span className="text-base sm:text-lg font-black text-[#1D1D1F]">
+                  {currentFarmer.name}
+                </span>
+              </div>
+              <div className="text-xs text-[#4B5563] flex flex-wrap items-center gap-x-3 gap-y-1 font-medium">
+                <span>
+                  PM-KISAN ID:{" "}
+                  <strong className="font-mono text-[#107C41] bg-white px-2 py-0.5 rounded border border-neutral-200">
+                    {currentFarmer.pmKisanId}
+                  </strong>
+                </span>
+                <span>• 📍 {currentFarmer.location}</span>
+                <span>• 📞 {currentFarmer.phone}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            <button
+              onClick={onOpenRegisterModal}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#107C41] hover:bg-[#0D6535] text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer active:scale-95 transition-all"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>{t.registerCrop}</span>
+            </button>
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white hover:bg-[#F5F5F7] text-[#4B5563] hover:text-[#1D1D1F] text-xs font-bold border border-neutral-200 cursor-pointer shadow-xs transition-all"
+              title="Switch or login as another farmer"
+            >
+              <User className="w-4 h-4 text-[#107C41]" />
+              <span>बदलें / Logout</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* PM-KISAN PORTAL SIGN-IN CARD */
+        <div className="p-6 sm:p-7 rounded-3xl bg-white border-2 border-[#107C41] shadow-[0_4px_20px_rgba(16,124,65,0.08)] space-y-5 animate-fade-in">
+          <div className="flex items-start justify-between gap-4 pb-4 border-b border-neutral-100">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🇮🇳</span>
+                <h2 className="text-lg sm:text-xl font-extrabold text-[#1D1D1F] tracking-tight">
+                  प्रधानमंत्री किसान सम्मान निधि (PM-KISAN) लॉगिन
+                </h2>
+              </div>
+              <p className="text-xs sm:text-sm text-[#4B5563] font-medium">
+                सरल एवं सीधा किसान प्रवेश • कोई OTP सत्यापन की आवश्यकता नहीं (No OTP required for demo)
+              </p>
+            </div>
+            {currentFarmer && (
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="text-xs text-[#6E6E73] hover:text-[#1D1D1F] font-semibold px-3 py-1.5 rounded-xl bg-[#F5F5F7] hover:bg-[#E5E5EA] cursor-pointer"
+              >
+                रद्द करें (Cancel)
+              </button>
+            )}
+          </div>
+
+          {/* 1-Click Fast Presets */}
+          <div className="space-y-2.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#6E6E73] block">
+              ⚡ 1-क्लिक त्वरित डेमो लॉगिन (Select Demo Farmer):
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {PRESET_FARMERS.map((p) => {
+                const isActive = currentFarmer?.id === p.id && !showLoginModal;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => handleQuickLogin(p)}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 shadow-xs active:scale-[0.98] ${
+                      isActive
+                        ? "bg-[#E8F5E9] border-[#107C41] text-[#1D1D1F] ring-2 ring-[#107C41]"
+                        : "bg-[#FBFBFD] hover:bg-[#F4FBF7] border-neutral-200 hover:border-[#C8E6C9]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl">👨‍🌾</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-neutral-200 text-[#107C41] font-mono">
+                        {p.pmKisanId}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-sm text-[#1D1D1F]">{p.name}</div>
+                      <div className="text-xs text-[#6E6E73] mt-0.5">{p.location}</div>
+                    </div>
+                    <div className="text-[11px] font-bold text-[#107C41] flex items-center gap-1 mt-1">
+                      <span>लॉगिन करें</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Manual Input Entry (Allow any number & password with no OTP) */}
+          <form onSubmit={handleCustomLogin} className="pt-4 border-t border-neutral-100 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">
+                  PM-KISAN पंजीकरण संख्या अथवा 10-अंक मोबाइल नंबर
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={pmKisanNumber}
+                    onChange={(e) => setPmKisanNumber(e.target.value)}
+                    placeholder="जैसे: PMK-9876543210 या 9876543210"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-white text-[#1D1D1F] font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1D1D1F] mb-1.5">
+                  पासवर्ड / पिन (कोई भी पासवर्ड दर्ज करें)
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={pmKisanPassword}
+                    onChange={(e) => setPmKisanPassword(e.target.value)}
+                    placeholder="•••••• (No OTP required)"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 bg-white text-[#1D1D1F] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#107C41]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+              <span className="text-xs text-[#6E6E73] font-medium flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#107C41]" />
+                <span>डेमो के लिए कोई भी नंबर व पासवर्ड स्वीकार्य है (No OTP verification)</span>
+              </span>
+
+              <button
+                type="submit"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#107C41] hover:bg-[#0D6535] text-white font-extrabold text-sm shadow-sm cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>PM-KISAN लॉगिन करें (Sign In)</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* LOGIN SUCCESS NOTIFICATION TOAST */}
+      {authSuccessToast && (
+        <div className="p-4 rounded-2xl bg-[#E8F5E9] border border-[#C8E6C9] text-[#107C41] font-bold text-sm flex items-center gap-3 animate-fade-in shadow-xs">
+          <CheckCircle2 className="w-5 h-5 shrink-0" />
+          <span>{authSuccessToast}</span>
+        </div>
+      )}
+
+      {/* RECENTLY REGISTERED BATCH NOTIFICATION BANNER */}
+      {lastAddedBatchId && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-[#E8F5E9] border-2 border-[#107C41] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🎉</span>
+            <div>
+              <h3 className="font-extrabold text-sm sm:text-base text-[#107C41]">
+                {lang === "hi"
+                  ? "आपकी नई फसल सफलतापूर्वक दर्ज कर ली गई है!"
+                  : "New harvest batch registered successfully!"}
+              </h3>
+              <p className="text-xs text-[#374151] mt-0.5">
+                {lang === "hi"
+                  ? "मंडी प्रबंधक को सूचित कर दिया गया है। ऑपरेशन्स टीम तुरंत खरीदार और गाड़ी आवंटित करेगी।"
+                  : "Logistics manager has been notified. Optimization engine is routing buyers & vehicles."}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onSwitchToManager}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#107C41] hover:bg-[#0D6535] text-white font-extrabold text-xs sm:text-sm shadow-xs cursor-pointer active:scale-95 transition-all shrink-0"
+          >
+            <span>💼 {lang === "hi" ? "प्रबंधक व्यू देखें (View in Manager)" : "View in Manager"}</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* 3. WEATHER & HEAT STRESS ADVISORY */}
       <div className="p-4 sm:p-5 rounded-2xl bg-[#FFF9E6] border border-[#FFE082] flex items-start gap-3.5 text-[#1D1D1F]">
         <div className="p-2.5 rounded-xl bg-[#FFE082] text-[#B76E00] shrink-0 mt-0.5">
           <Sun className="w-6 h-6 stroke-[2.5]" />
@@ -623,10 +937,23 @@ export function FarmerView({
                 speakText(speech);
               };
 
+              const isJustAdded = b.id === lastAddedBatchId;
+              const isMyLot =
+                currentFarmer &&
+                (b.farmer_id === currentFarmer.id ||
+                  (b.farmers?.name &&
+                    b.farmers.name
+                      .toLowerCase()
+                      .includes(currentFarmer.name.split(" ")[0].toLowerCase())));
+
               return (
                 <div
                   key={b.id}
-                  className="p-5 rounded-3xl bg-white border border-neutral-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-3.5 flex flex-col justify-between"
+                  className={`p-5 rounded-3xl bg-white border shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-3.5 flex flex-col justify-between transition-all ${
+                    isJustAdded
+                      ? "border-2 border-[#107C41] ring-2 ring-[#C8E6C9] bg-[#F4FBF7]"
+                      : "border-neutral-200/80"
+                  }`}
                 >
                   <div>
                     {/* Top: Crop Emoji & Name */}
@@ -645,12 +972,24 @@ export function FarmerView({
                         </div>
                       </div>
 
-                      {/* Status Tag */}
-                      <span
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${statusBadge.bg}`}
-                      >
-                        {statusBadge.label}
-                      </span>
+                      {/* Status Tag & Ownership Badge */}
+                      <div className="flex flex-col items-end gap-1">
+                        {isJustAdded && (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#107C41] text-white shadow-xs animate-pulse">
+                            ⚡ अभी दर्ज किया गया (New)
+                          </span>
+                        )}
+                        {isMyLot && !isJustAdded && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#107C41] border border-[#C8E6C9]">
+                            🌾 आपका लॉट (Your Harvest)
+                          </span>
+                        )}
+                        <span
+                          className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${statusBadge.bg}`}
+                        >
+                          {statusBadge.label}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Massive Days Counter */}

@@ -133,7 +133,9 @@ export function RouteMap({
   const markersRef = useRef<Map<string, any>>(new Map());
   const routesRef = useRef<Map<string, any>>(new Map());
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const apiKey =
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+    "AIzaSyA4_yVFYJmQA5NmRcog-8hRZs6C1EWSwBk";
 
   /* -------- Load Google Maps API -------- */
   useEffect(() => {

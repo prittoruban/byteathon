@@ -1,1317 +1,199 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  Activity,
-  ShieldCheck,
-  ThermometerSnowflake,
-  Truck,
-  Warehouse,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw,
-  ExternalLink,
-  Cpu,
-  Layers,
-  Database,
-  ArrowRight,
-  TrendingUp,
-  Clock,
-  Plus,
-  Edit2,
-  Filter,
-  DollarSign,
-  AlertTriangle,
-  Scale,
-  Thermometer,
-  Route,
-  Zap,
-  Check,
-  Flame,
-  Navigation,
-} from "lucide-react";
-import { ShelfLifeBadge } from "@/components/ShelfLifeBadge";
-import { CreateBatchModal } from "@/components/CreateBatchModal";
-import { UpdateBatchModal } from "@/components/UpdateBatchModal";
-import { SpoilageSimulator } from "@/components/SpoilageSimulator";
-import { DynamicReroutingView } from "@/components/DynamicReroutingView";
-import { SecondaryRecoveryView } from "@/components/SecondaryRecoveryView";
-import { IntegratedMissionControl } from "@/components/IntegratedMissionControl";
-import { FarmerView } from "@/components/FarmerView";
+  RoleType,
+  DEMO_CREDENTIALS,
+  getStoredUser,
+  loginWithRole,
+} from "@/lib/auth";
+import { LanguageSwitcher, useLanguage } from "@/lib/i18n";
 
-interface HealthData {
-  status: string;
-  service: string;
-  version: string;
-  environment: string;
-  timestamp: string;
-  database_configured: boolean;
-  supabase_url?: string;
-}
-
-interface InventorySummary {
-  total_produce_kg: number;
-  total_batches_count: number;
-  active_batches_count: number;
-  avg_remaining_shelf_life_days: number;
-  critical_batches_count: number;
-  buyer_demand: {
-    total_demand_kg: number;
-    primary_demand_kg: number;
-    secondary_demand_kg: number;
-    total_buyers: number;
-  };
-  storage: {
-    total_capacity_kg: number;
-    utilization_kg: number;
-    available_capacity_kg: number;
-    utilization_pct: number;
-    facilities_count: number;
-  };
-  vehicles: {
-    total_payload_kg: number;
-    total_vehicles: number;
-    refrigerated_count: number;
-    ambient_count: number;
-  };
-}
-
-interface ProduceBatchItem {
-  id: string;
-  crop_type: string;
-  quantity_kg: number;
-  harvest_date: string;
-  initial_shelf_life_days: number;
-  remaining_shelf_life_days: number;
-  storage_condition: string;
-  basal_degradation_score: number;
-  status: string;
-  created_at: string;
-  farmers?: { name: string; location: string };
-}
-
-interface BuyerItem {
-  id: string;
-  name: string;
-  type: string;
-  location: string;
-  demand_crop: string;
-  demand_kg: number;
-  offered_price_per_kg: number;
-  quality_threshold_min_shelf_life_hours: number;
-}
-
-interface StorageFacilityItem {
-  id: string;
-  name: string;
-  location: string;
-  total_capacity_kg: number;
-  current_utilization_kg: number;
-  temperature_celsius: number;
-  humidity_pct: number;
-  cost_per_kg_per_day: number;
-}
-
-interface TransportVehicleItem {
-  id: string;
-  vehicle_number: string;
-  driver_name: string;
-  driver_phone: string;
-  max_payload_kg: number;
-  is_refrigerated: boolean;
-  current_temp_celsius: number;
-  current_humidity_pct: number;
-  cost_per_km: number;
-  status: string;
-}
-
-interface AllocationRecommendation {
-  allocation_id: string;
-  batch_id: string;
-  crop_type: string;
-  farmer_name: string;
-  origin_location: string;
-  buyer_name: string;
-  buyer_type: string;
-  destination_location: string;
-  vehicle_number: string;
-  is_refrigerated: boolean;
-  allocated_quantity_kg: number;
-  distance_km: number;
-  estimated_transit_hours: number;
-  transport_cost: number;
-  expected_revenue: number;
-  net_margin: number;
-  shelf_life_margin_hours: number;
-  explanation: string;
-}
-
-interface DistributionPlan {
-  plan_id: string;
-  timestamp: string;
-  total_allocated_kg: number;
-  total_unallocated_kg: number;
-  total_expected_revenue: number;
-  total_transport_cost: number;
-  total_net_margin: number;
-  recommendations: AllocationRecommendation[];
-  unallocated_batches: {
-    batch_id: string;
-    crop_type: string;
-    farmer_name: string;
-    original_quantity_kg: number;
-    unallocated_quantity_kg: number;
-    storage_condition: string;
-    remaining_shelf_life_days: number;
-    reason: string;
-    recommended_action: string;
-  }[];
-  unfulfilled_demands: {
-    buyer_id: string;
-    buyer_name: string;
-    buyer_type: string;
-    crop_type: string;
-    original_demand_kg: number;
-    unfulfilled_demand_kg: number;
-    reason: string;
-  }[];
-  constraints_audit: {
-    demand_limits_respected: boolean;
-    vehicle_capacities_respected: boolean;
-    shelf_life_limits_respected: boolean;
-    all_allocations_feasible: boolean;
-  };
-}
-
-type TabId =
-  | "overview"
-  | "distribution"
-  | "rerouting"
-  | "secondary"
-  | "spoilage"
-  | "batches"
-  | "buyers"
-  | "storage"
-  | "vehicles"
-  | "logistics-map";
-
-const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: "overview", label: "Mission Control", icon: Route },
-  { id: "distribution", label: "Distribution Engine", icon: Route },
-  { id: "rerouting", label: "Dynamic Rerouting", icon: Navigation },
-  { id: "secondary", label: "Secondary Arbitrage", icon: Scale },
-  { id: "spoilage", label: "Arrhenius Spoilage", icon: Flame },
-  { id: "logistics-map", label: "Logistics Map", icon: MapPin },
-  { id: "batches", label: "Produce Batches", icon: Truck },
-  { id: "buyers", label: "Buyer Demand", icon: Warehouse },
-  { id: "storage", label: "Cold Storage", icon: ThermometerSnowflake },
-  { id: "vehicles", label: "Vehicle Fleet", icon: Truck },
-];
-
-export default function Dashboard() {
-  const [, setHealth] = useState<HealthData | null>(null);
-  const [summary, setSummary] = useState<InventorySummary | null>(null);
-  const [batches, setBatches] = useState<ProduceBatchItem[]>([]);
-  const [, setBuyers] = useState<BuyerItem[]>([]);
-  const [storages, setStorages] = useState<StorageFacilityItem[]>([]);
-  const [vehicles, setVehicles] = useState<TransportVehicleItem[]>([]);
-  const [distributionPlan, setDistributionPlan] = useState<DistributionPlan | null>(null);
-  const [workflowData, setWorkflowData] = useState<any | null>(null);
-
-  const [loading, setLoading] = useState<boolean>(true);
-  const [optimizing, setOptimizing] = useState<boolean>(false);
-  const [latency, setLatency] = useState<number | null>(null);
-  const [lastChecked, setLastChecked] = useState<string>("");
-
-  const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
-  const [selectedBatchForEdit, setSelectedBatchForEdit] =
-    useState<ProduceBatchItem | null>(null);
-
-  // Filters & Tabs
-  const [cropFilter, setCropFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "distribution" | "rerouting" | "secondary" | "spoilage" | "batches" | "buyers" | "storage" | "vehicles"
-  >("overview");
-
-  // View Mode: Defaults to ultra-simple, voice-enabled Farmer View for rural Indian farmers
-  const [viewMode, setViewMode] = useState<"farmer" | "manager">("farmer");
-
-  const backendUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-
-  const fetchAllData = useCallback(async () => {
-    setLoading(true);
-    const start = performance.now();
-    try {
-      const [
-        healthRes,
-        summaryRes,
-        batchesRes,
-        buyersRes,
-        storageRes,
-        vehiclesRes,
-        planRes,
-      ] = await Promise.all([
-        fetch(`${backendUrl}/health`, { cache: "no-store" }),
-        fetch(`${backendUrl}/api/inventory/summary`, { cache: "no-store" }),
-        fetch(`${backendUrl}/api/produce-batches`, { cache: "no-store" }),
-        fetch(`${backendUrl}/api/buyers`, { cache: "no-store" }),
-        fetch(`${backendUrl}/api/storage-facilities`, { cache: "no-store" }),
-        fetch(`${backendUrl}/api/transport-vehicles`, { cache: "no-store" }),
-        fetch(`${backendUrl}/api/distribution/recommend`, { cache: "no-store" }),
-      ]);
-
-      const end = performance.now();
-      setLatency(Math.round(end - start));
-      setLastChecked(new Date().toLocaleTimeString());
-
-      if (healthRes.ok) setHealth(await healthRes.json());
-      if (summaryRes.ok) setSummary(await summaryRes.json());
-      if (batchesRes.ok) setBatches(await batchesRes.json());
-      if (buyersRes.ok) setBuyers(await buyersRes.json());
-      if (storageRes.ok) setStorages(await storageRes.json());
-      if (vehiclesRes.ok) setVehicles(await vehiclesRes.json());
-      if (planRes.ok) setDistributionPlan(await planRes.json());
-    } catch (err) {
-      console.error("Failed to load inventory and distribution data:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [backendUrl]);
-
-  const handleRefresh = useCallback(() => {
-    setLoading(true);
-    fetchAllData();
-  }, [fetchAllData]);
+export default function HomePage() {
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
-    fetchAllData();
-    const interval = setInterval(fetchAllData, 30000);
-    return () => clearInterval(interval);
-  }, [fetchAllData]);
-
-  const filteredBatches = batches.filter((b) => {
-    const matchesCrop =
-      cropFilter === "all" ||
-      b.crop_type.toLowerCase() === cropFilter.toLowerCase();
-    const matchesStatus =
-      statusFilter === "all" ||
-      b.status.toLowerCase() === statusFilter.toLowerCase();
-    return matchesCrop && matchesStatus;
-  });
-
-  const tabsConfig = [
-    {
-      id: "overview",
-      label: "Mission Control (Overview)",
-      icon: Activity,
-    },
-    {
-      id: "distribution",
-      label: `Distribution Engine (${distributionPlan?.recommendations.length ?? 0})`,
-      icon: Route,
-    },
-    {
-      id: "rerouting",
-      label: "Dynamic Rerouting",
-      icon: Navigation,
-    },
-    {
-      id: "secondary",
-      label: "Secondary Arbitrage",
-      icon: Scale,
-    },
-    {
-      id: "spoilage",
-      label: "Arrhenius Spoilage Engine",
-      icon: Flame,
-    },
-    {
-      id: "batches",
-      label: `Produce Batches (${batches.length})`,
-      icon: Layers,
-    },
-    {
-      id: "buyers",
-      label: `Buyer Demand (${buyers.length})`,
-      icon: Warehouse,
-    },
-    {
-      id: "storage",
-      label: `Cold Storage (${storages.length})`,
-      icon: ThermometerSnowflake,
-    },
-    {
-      id: "vehicles",
-      label: `Vehicle Fleet (${vehicles.length})`,
-      icon: Truck,
-    },
-  ] as const;
-
-  const handleTabKeyDown = (e: React.KeyboardEvent, index: number) => {
-    const total = tabsConfig.length;
-    let nextIndex = index;
-    if (e.key === "ArrowRight") {
-      nextIndex = (index + 1) % total;
-    } else if (e.key === "ArrowLeft") {
-      nextIndex = (index - 1 + total) % total;
-    } else if (e.key === "Home") {
-      nextIndex = 0;
-    } else if (e.key === "End") {
-      nextIndex = total - 1;
-    } else {
-      return;
+    const user = getStoredUser();
+    if (user) {
+      setCurrentUser(user);
     }
-    e.preventDefault();
-    const nextTab = tabsConfig[nextIndex].id;
-    setActiveTab(nextTab as typeof activeTab);
-    const nextElem = document.getElementById(`tab-${nextTab}`);
-    nextElem?.focus();
+  }, []);
+
+  const handleLaunchRole = (role: RoleType) => {
+    loginWithRole(role);
+    router.push(DEMO_CREDENTIALS[role].path);
+  };
+
+  const getRoleTitle = (role: RoleType) => {
+    switch (role) {
+      case "farmer":
+        return t("role.farmer.title", "Farmer Intake & Harvest");
+      case "buyer":
+        return t("role.buyer.title", "Buyer Procurement Pool");
+      case "truck_driver":
+        return t("role.truck.title", "Reefer Transit Telemetry");
+      case "cold_storage_owner":
+        return t("role.cold_storage.title", "Cold Vault Buffer Network");
+      case "fpo_coordinator":
+        return t("role.fpo.title", "Cluster Mission Control");
+      default:
+        return (DEMO_CREDENTIALS as any)[role]?.title || "";
+    }
+  };
+
+  const getRoleDesc = (role: RoleType) => {
+    switch (role) {
+      case "farmer":
+        return t("role.farmer.desc", "Nashik Farmer Producer Node");
+      case "buyer":
+        return t("role.buyer.desc", "FreshMart Prime Retail & Hypermarkets");
+      case "truck_driver":
+        return t("role.truck.desc", "Maharashtra Agro Logistics Fleet");
+      case "cold_storage_owner":
+        return t("role.cold_storage.desc", "MahaAgro Vault 04 & APMC Hubs");
+      case "fpo_coordinator":
+        return t("role.fpo.desc", "Nashik Farmer Producer Org");
+      default:
+        return (DEMO_CREDENTIALS as any)[role]?.subtitle || "";
+    }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-white/20 selection:text-white">
-      {/* Proper Apple HIG Navigation Bar (Sticky with Liquid Glass material) */}
-      <header className="sticky top-0 z-40 ios-glass-bar shadow-xs">
-        {/* Top Brand & Actions Bar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          {/* Brand Identity */}
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between font-sans">
+      {/* Top Header */}
+      <header className="border-b border-slate-200 bg-white px-4 sm:px-6 h-12 flex items-center">
+        <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2.5">
-                <span className="font-semibold text-lg tracking-tight text-white">
-                  HARVEST ZERO
-                </span>
-                <span
-                  className={`text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${viewMode === "farmer"
-                      ? "bg-[#30D158]/15 text-[#30D158] border-[#30D158]/25"
-                      : "text-neutral-400 border-white/[0.1]"
-                    }`}
-                >
-                  {viewMode === "farmer"
-                    ? "किसान साथी (Farmer View)"
-                    : "Operations Control"}
-                </span>
-              </div>
-              <p className="text-xs text-neutral-400 hidden sm:block">
-                {viewMode === "farmer"
-                  ? "सरल फसल सुरक्षा और सही दाम साथी"
-                  : "Post-Harvest Loss Prevention and Cold-Chain Logistics"}
-              </p>
-            </div>
+            <span className="text-sm font-semibold tracking-tight text-slate-900">
+              {t("app.brand", "HARVEST ZERO")}
+            </span>
+            <span className="text-[10px] uppercase tracking-wide font-semibold rounded px-2 py-0.5 bg-slate-100 text-slate-600">
+              BYTEATHON 2026
+            </span>
           </div>
 
-          {/* Quick Actions & System Status */}
-          <div className="flex items-center gap-2.5">
-            {/* View Mode Switcher */}
-            {viewMode === "farmer" ? (
-              <button
-                onClick={() => setViewMode("manager")}
-                className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold text-neutral-300 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] transition-all cursor-pointer"
-                title="Switch to Logistics Manager View"
-              >
-                <span>⚙️ ऑपरेशन्स (Manager View)</span>
-              </button>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+
+            <div className="w-[1px] h-4 bg-[#e2e8f0]" />
+
+            {currentUser ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-500 hidden sm:inline">
+                  {currentUser.display_name}
+                </span>
+                <Link
+                  href={DEMO_CREDENTIALS[currentUser.role as RoleType]?.path || "/farmer/dashboard"}
+                  className="h-8 sm:h-7 px-3 text-xs font-medium rounded bg-emerald-600 hover:bg-emerald-700 text-white flex items-center touch-manipulation"
+                >
+                  {t("nav.dashboard", "Dashboard")}
+                </Link>
+              </div>
             ) : (
-              <button
-                onClick={() => setViewMode("farmer")}
-                className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold text-black bg-[#30D158] hover:bg-[#28b84d] transition-all cursor-pointer shadow-sm"
-                title="Switch to Farmer View"
+              <Link
+                href="/login"
+                className="h-8 sm:h-7 px-3 text-xs font-medium rounded border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center touch-manipulation"
               >
-                <span>🌾 किसान साथी (Farmer View)</span>
-              </button>
+                {t("nav.sign_in", "Sign In")}
+              </Link>
             )}
+          </div>
+        </div>
+      </header>
 
-            {/* Quick Register Produce Action */}
-            <button
-              onClick={() => setCreateModalOpen(true)}
-              className="inline-flex items-center gap-2 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span className="hidden sm:inline">
-                {viewMode === "farmer" ? "नई फसल जोड़ें" : "Register Batch"}
-              </span>
-              <span className="sm:hidden">+</span>
-            </button>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 w-full space-y-6 sm:space-y-8">
+        <div className="max-w-2xl space-y-2">
+          <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            {t("app.tagline", "Perishable Cold Chain System")}
+          </div>
+          <h1 className="text-lg font-semibold text-slate-900 sm:text-xl">
+            {t("app.hero_title", "Multi-Echelon Agricultural Logistics & Arrhenius Spoilage Prevention")}
+          </h1>
+          <p className="text-xs text-slate-500 leading-normal">
+            {t("app.hero_desc", "Continuous Arrhenius kinetic modeling, satellite microclimate telemetry, and synchronized allocation across 5 supply chain actors.")}
+          </p>
+        </div>
 
-            {/* Refresh Button */}
-            <button
-              onClick={fetchAllData}
-              disabled={loading}
-              className="p-2 text-neutral-400 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-              title="Refresh inventory data"
-              aria-label="Refresh inventory data"
-            >
-              <RefreshCw
-                className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-400" : ""
-                  }`}
-              />
-            </button>
+        {/* 5 Role Selectors (Disciplined Cards) */}
+        <div className="space-y-3">
+          <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            {t("nav.select_role_prompt", "Select Role to Access Console")}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {(Object.keys(DEMO_CREDENTIALS) as RoleType[]).map((role) => {
+              const item = DEMO_CREDENTIALS[role];
+              return (
+                <div
+                  key={role}
+                  className="border border-slate-200 rounded-md bg-white p-3.5 sm:p-3 flex flex-col justify-between space-y-3"
+                >
+                  <div className="space-y-1">
+                    <div className="text-sm font-semibold text-slate-900">
+                      {getRoleTitle(role)}
+                    </div>
+                    <div className="text-xs text-slate-500 line-clamp-2">
+                      {getRoleDesc(role)}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase tracking-wide text-slate-400">
+                      {role}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleLaunchRole(role)}
+                      className="h-8 sm:h-7 px-3.5 sm:px-3 text-xs font-medium rounded bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer touch-manipulation"
+                    >
+                      {t("nav.enter", "Enter")}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Sub-Navigation: iOS Segmented Control Tab Bar ONLY in Manager Mode */}
-        {viewMode === "manager" && (
-          <div className="border-t border-white/[0.08] bg-black/40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto flex items-center justify-between gap-4 scrollbar-none">
-              <nav
-                role="tablist"
-                aria-label="Platform Navigation"
-                className="flex items-center gap-1 shrink-0"
-              >
-                {tabsConfig.map((tab, idx) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      id={`tab-${tab.id}`}
-                      role="tab"
-                      aria-selected={isActive}
-                      aria-controls={`panel-${tab.id}`}
-                      tabIndex={isActive ? 0 : -1}
-                      onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                      onKeyDown={(e) => handleTabKeyDown(e, idx)}
-                      className={`inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 shrink-0 ${isActive
-                          ? "bg-[#242426] text-white shadow-xs font-semibold border border-white/[0.12]"
-                          : "text-neutral-400 hover:text-white hover:bg-white/[0.06]"
-                        }`}
-                    >
-                      <Icon
-                        className="w-3.5 h-3.5 stroke-[2]"
-                        aria-hidden="true"
-                      />
-                      <span>{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
+        {/* System Overview Specifications */}
+        <div className="border border-slate-200 rounded-md bg-white p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-3">
+            System Subsystems
+          </div>
 
-              {/* Contextual Action Button */}
-              {activeTab === "distribution" && (
-                <button
-                  onClick={runDistributionOptimization}
-                  disabled={optimizing}
-                  className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer shrink-0"
-                >
-                  <Zap
-                    className={`w-3.5 h-3.5 ${optimizing ? "animate-spin text-amber-300" : ""
-                      }`}
-                  />
-                  <span>
-                    {optimizing ? "Computing..." : "Re-Run Optimization"}
-                  </span>
-                </button>
-              )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="space-y-1">
+              <div className="text-sm font-semibold text-slate-900">Arrhenius Engine</div>
+              <p className="text-xs text-slate-500 leading-normal">
+                Models activation energies Ea, rate constants k(T), and chilling limits derived from live farm coordinates.
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-sm font-semibold text-slate-900">Multi-Echelon Dispatch</div>
+              <p className="text-xs text-slate-500 leading-normal">
+                Generates tripartite distribution plans pairing produce lots with commercial buyers, reefer trucks, and cold vault buffers.
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-sm font-semibold text-slate-900">Real-Time In-App Protocol</div>
+              <p className="text-xs text-slate-500 leading-normal">
+                Zero external dependencies on SMS or WhatsApp. Synchronized in-app dispatch status across all roles.
+              </p>
             </div>
           </div>
-        )}
-      </header>
-
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
-        {viewMode === "farmer" ? (
-          <FarmerView
-            batches={batches}
-            recommendations={distributionPlan?.recommendations || []}
-            storages={storages}
-            onOpenRegisterModal={() => setCreateModalOpen(true)}
-            onRefresh={fetchAllData}
-            loading={loading}
-            onSwitchToManager={() => setViewMode("manager")}
-          />
-        ) : (
-          <>
-            {/* Top 5 KPI Grid */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {/* 1. Total Produce Tracked */}
-              <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
-                <div>
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
-                    Active Produce
-                  </span>
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
-                      {summary
-                        ? (summary.total_produce_kg / 1000).toFixed(1)
-                        : "--"}
-                    </span>
-                    <span className="text-sm font-medium text-neutral-400">k kg</span>
-                  </div>
-                </div>
-                <div className="mt-3 text-xs text-neutral-400">
-                  {summary
-                    ? `${summary.active_batches_count} batches logged`
-                    : "Loading..."}
-                </div>
-              </div>
-
-              {/* 2. Remaining Shelf Life */}
-              <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
-                <div>
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
-                    Avg Shelf Life
-                  </span>
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
-                      {summary ? summary.avg_remaining_shelf_life_days : "--"}
-                    </span>
-                    <span className="text-sm font-medium text-neutral-400">days</span>
-                  </div>
-                </div>
-                <div className="mt-3 text-xs text-neutral-400">
-                  {summary?.critical_batches_count ? (
-                    <span className="text-amber-400 font-medium">
-                      {summary.critical_batches_count} critical (&lt;3 days)
-                    </span>
-                  ) : (
-                    "All batches nominal"
-                  )}
-                </div>
-              </div>
-
-              {/* 3. Buyer Demand */}
-              <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
-                <div>
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
-                    Buyer Demand
-                  </span>
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
-                      {summary
-                        ? (summary.buyer_demand.total_demand_kg / 1000).toFixed(1)
-                        : "--"}
-                    </span>
-                    <span className="text-sm font-medium text-neutral-400">k kg</span>
-                  </div>
-                </div>
-                <div className="mt-3 text-xs text-neutral-400">
-                  {summary
-                    ? `${(summary.buyer_demand.primary_demand_kg / 1000).toFixed(
-                      1
-                    )}k retail / ${(
-                      summary.buyer_demand.secondary_demand_kg / 1000
-                    ).toFixed(1)}k puree`
-                    : "Loading..."}
-                </div>
-              </div>
-
-              {/* 4. Storage Availability */}
-              <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
-                <div>
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
-                    Cold Storage
-                  </span>
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
-                      {summary ? summary.storage.utilization_pct : "--"}
-                    </span>
-                    <span className="text-sm font-medium text-neutral-400">% used</span>
-                  </div>
-                </div>
-                <div className="mt-3 text-xs text-neutral-400">
-                  {summary
-                    ? `${(summary.storage.available_capacity_kg / 1000).toFixed(
-                      1
-                    )}k kg available`
-                    : "Loading..."}
-                </div>
-              </div>
-
-              {/* 5. Transport Fleet Payload */}
-              <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm flex flex-col justify-between">
-                <div>
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
-                    Vehicle Fleet
-                  </span>
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-3xl font-bold tracking-tight tabular-nums text-white">
-                      {summary
-                        ? (summary.vehicles.total_payload_kg / 1000).toFixed(1)
-                        : "--"}
-                    </span>
-                    <span className="text-sm font-medium text-neutral-400">k kg cap</span>
-                  </div>
-                </div>
-                <div className="mt-3 text-xs text-neutral-400">
-                  {summary
-                    ? `${summary.vehicles.refrigerated_count} cold / ${summary.vehicles.ambient_count} ambient`
-                    : "Loading..."}
-                </div>
-              </div>
-            </section>
-
-            {/* TAB: MISSION CONTROL OVERVIEW */}
-            {activeTab === "overview" && (
-              <div
-                id="panel-overview"
-                role="tabpanel"
-                aria-labelledby="tab-overview"
-                tabIndex={0}
-                className="focus:outline-none"
-              >
-                <IntegratedMissionControl
-                  onNavigateToTab={(tab) => setActiveTab(tab as typeof activeTab)}
-                />
-              </div>
-            )}
-
-            {/* TAB: DYNAMIC REROUTING */}
-            {activeTab === "rerouting" && (
-              <div
-                id="panel-rerouting"
-                role="tabpanel"
-                aria-labelledby="tab-rerouting"
-                tabIndex={0}
-                className="focus:outline-none"
-              >
-                <DynamicReroutingView />
-              </div>
-            )}
-
-            {/* TAB: SECONDARY-MARKET RECOVERY */}
-            {activeTab === "secondary" && <SecondaryRecoveryView />}
-
-            {/* TAB: SPOILAGE-RISK ENGINE */}
-            {activeTab === "spoilage" && <SpoilageSimulator />}
-
-            {/* TAB: DISTRIBUTION ENGINE */}
-            {activeTab === "distribution" && (
-              <div className="space-y-6">
-                {/* Optimization Financial Banner */}
-                {distributionPlan && (
-                  <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-900 via-slate-900 to-slate-950 text-white border border-emerald-800 shadow-md">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
-                      <div>
-                        <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium">
-                          <Cpu className="w-4 h-4" />
-                          <span>FEFO-Optimized Plan: <span className="font-mono">{distributionPlan.plan_id}</span></span>
-                        </div>
-                        <h2 className="text-xl font-bold mt-1 tracking-tight">
-                          Multi-Echelon Allocation & Transportation Economics
-                        </h2>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5" /> Demand Limits Respected
-                        </span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20 flex items-center gap-1 font-medium text-[11px]">
-                          <Check className="w-3.5 h-3.5" /> Vehicle Payload Checked
-                        </span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20 flex items-center gap-1 font-medium text-[11px]">
-                          <Check className="w-3.5 h-3.5" /> Shelf Life Safe
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 pt-4 text-xs">
-                      <div>
-                        <span className="text-neutral-400 block font-medium uppercase tracking-wider text-[10px]">Allocated Volume</span>
-                        <div className="text-xl font-bold text-white mt-1 tabular-nums">
-                          {distributionPlan.total_allocated_kg.toLocaleString()}<span className="text-xs font-normal text-neutral-400 ml-1">kg</span>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-neutral-400 block font-medium uppercase tracking-wider text-[10px]">Unallocated Volume</span>
-                        <div className="text-xl font-bold text-[#FF9F0A] mt-1 tabular-nums">
-                          {distributionPlan.total_unallocated_kg.toLocaleString()}<span className="text-xs font-normal text-neutral-400 ml-1">kg</span>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-neutral-400 block font-medium uppercase tracking-wider text-[10px]">Expected Gross Revenue</span>
-                        <div className="text-xl font-bold text-white mt-1 tabular-nums">
-                          <span className="text-xs font-medium mr-0.5 text-neutral-400">₹</span>{distributionPlan.total_expected_revenue.toLocaleString()}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-neutral-400 block font-medium uppercase tracking-wider text-[10px]">Total Transport Cost</span>
-                        <div className="text-xl font-bold text-[#FF453A] mt-1 tabular-nums">
-                          <span className="text-xs font-medium mr-0.5 text-neutral-400">₹</span>{distributionPlan.total_transport_cost.toLocaleString()}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-neutral-400 block font-medium uppercase tracking-wider text-[10px]">Net Economic Yield</span>
-                        <div className="text-xl font-bold text-[#30D158] mt-1 tabular-nums">
-                          <span className="text-xs font-medium mr-0.5 text-neutral-400">₹</span>{distributionPlan.total_net_margin.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Recommendations List */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                      <Route className="w-4 h-4 text-[#30D158]" />
-                      <span>Recommended Produce Allocations ({distributionPlan?.recommendations.length ?? 0})</span>
-                    </h3>
-                    <span className="text-xs text-neutral-400">
-                      Prioritized by basal decay rate & maximum net margin
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {distributionPlan?.recommendations.map((rec) => {
-                      const isPrimary = rec.buyer_type === "primary_retail";
-                      return (
-                        <div
-                          key={rec.allocation_id}
-                          className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm hover:border-white/[0.15] transition-all space-y-3"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm text-white">
-                                {rec.crop_type}
-                              </span>
-                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#30D158]/10 border border-[#30D158]/20 text-[#30D158] tabular-nums">
-                                {rec.allocated_quantity_kg.toLocaleString()} kg
-                              </span>
-                            </div>
-                            <span
-                              className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium uppercase tracking-wider ${isPrimary
-                                  ? "bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20"
-                                  : "bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20"
-                                }`}
-                            >
-                              {isPrimary ? "Primary Retail" : "Secondary Processor"}
-                            </span>
-                          </div>
-
-                          {/* Route Map description */}
-                          <div className="text-xs space-y-1.5 p-3 rounded-xl bg-[#18181A] border border-white/[0.06]">
-                            <div className="flex items-center justify-between text-neutral-400">
-                              <span className="text-neutral-500">Origin:</span>
-                              <span className="font-medium text-neutral-200">
-                                {rec.farmer_name} ({rec.origin_location})
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-neutral-400">
-                              <span className="text-neutral-500">Destination:</span>
-                              <span className="font-medium text-neutral-200">
-                                {rec.buyer_name} ({rec.destination_location})
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-neutral-400">
-                              <span className="text-neutral-500">Assigned Truck:</span>
-                              <span className="text-neutral-300">
-                                {rec.vehicle_number} (
-                                {rec.is_refrigerated ? "Refrigerated" : "Ambient"})
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Metrics bar */}
-                          <div className="grid grid-cols-4 gap-2 text-center text-xs py-2 border-y border-white/[0.06]">
-                            <div>
-                              <div className="text-[10px] text-neutral-500">Distance</div>
-                              <div className="font-medium text-neutral-200 tabular-nums">
-                                {rec.distance_km} km
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] text-neutral-500">Transit</div>
-                              <div className="font-medium text-neutral-200 tabular-nums">
-                                {rec.estimated_transit_hours}h
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] text-neutral-500">Freight Cost</div>
-                              <div className="font-medium text-[#FF453A] tabular-nums">
-                                ₹{rec.transport_cost.toLocaleString()}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] text-neutral-500">Net Profit</div>
-                              <div className="font-medium text-[#30D158] tabular-nums">
-                                ₹{rec.net_margin.toLocaleString()}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Explanation */}
-                          <div className="p-3 rounded-xl bg-[#18181A] border border-white/[0.06] text-xs text-neutral-300">
-                            <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 mb-1">
-                              Optimization Rationale
-                            </div>
-                            {rec.explanation}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Unallocated and Unfulfilled section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Unallocated Batches */}
-                  <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-sm text-white flex items-center gap-2">
-                        <Scale className="w-4 h-4 text-[#FF9F0A]" />
-                        <span>Unallocated Produce Inventory ({distributionPlan?.unallocated_batches.length ?? 0})</span>
-                      </h4>
-                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20 font-medium uppercase tracking-wider">
-                        Buffer Stock
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {distributionPlan?.unallocated_batches.map((ub, idx) => (
-                        <div
-                          key={idx}
-                          className="p-3 rounded-xl bg-[#18181A] border border-white/[0.06] text-xs space-y-1.5"
-                        >
-                          <div className="flex justify-between font-medium text-white">
-                            <span>
-                              {ub.crop_type} ({ub.farmer_name})
-                            </span>
-                            <span className="text-[#FF9F0A] tabular-nums font-semibold">
-                              {ub.unallocated_quantity_kg.toLocaleString()} kg
-                            </span>
-                          </div>
-                          <div className="text-neutral-400 text-[11px]">{ub.reason}</div>
-                          <div className="text-[#30D158] text-[11px] font-medium">
-                            Action: {ub.recommended_action}
-                          </div>
-                        </div>
-                      ))}
-                      {distributionPlan?.unallocated_batches.length === 0 && (
-                        <div className="text-xs text-neutral-500 py-4 text-center">
-                          All produce batches fully allocated.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Unfulfilled Buyer Demand */}
-                  <div className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-sm text-white flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-[#FF453A]" />
-                        <span>Unfulfilled Buyer Demand ({distributionPlan?.unfulfilled_demands.length ?? 0})</span>
-                      </h4>
-                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#FF453A]/10 text-[#FF453A] border border-[#FF453A]/20 font-medium uppercase tracking-wider">
-                        Demand Deficit
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {distributionPlan?.unfulfilled_demands.map((ud, idx) => (
-                        <div
-                          key={idx}
-                          className="p-3 rounded-xl bg-[#18181A] border border-white/[0.06] text-xs space-y-1.5"
-                        >
-                          <div className="flex justify-between font-medium text-white">
-                            <span>
-                              {ud.buyer_name} ({ud.crop_type})
-                            </span>
-                            <span className="text-[#FF453A] tabular-nums font-semibold">
-                              {ud.unfulfilled_demand_kg.toLocaleString()} kg short
-                            </span>
-                          </div>
-                          <div className="text-neutral-400 text-[11px]">{ud.reason}</div>
-                        </div>
-                      ))}
-                      {distributionPlan?.unfulfilled_demands.length === 0 && (
-                        <div className="text-xs text-neutral-500 py-4 text-center">
-                          All buyer demand completely fulfilled.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: PRODUCE INVENTORY & BATCHES */}
-            {activeTab === "batches" && (
-              <div className="space-y-4">
-                {/* Filter Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-[#141416] border border-white/[0.08] text-xs font-sans">
-                  <div className="flex items-center gap-2 text-neutral-400">
-                    <Filter className="w-3.5 h-3.5 text-[#30D158]" />
-                    <span className="font-medium text-neutral-300">
-                      Filters
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-neutral-400">Crop:</span>
-                      <select
-                        value={cropFilter}
-                        onChange={(e) => setCropFilter(e.target.value)}
-                        className="px-2.5 py-1 rounded-lg border border-white/[0.12] bg-[#1C1C1E] text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#30D158]"
-                      >
-                        <option value="all">All Crops</option>
-                        <option value="tomato">Tomato</option>
-                        <option value="potato">Potato</option>
-                        <option value="onion">Onion</option>
-                        <option value="mango">Mango</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-neutral-400">Status:</span>
-                      <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="px-2.5 py-1 rounded-lg border border-white/[0.12] bg-[#1C1C1E] text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#30D158]"
-                      >
-                        <option value="all">All Statuses</option>
-                        <option value="harvested">Harvested</option>
-                        <option value="in_storage">In Storage</option>
-                        <option value="in_transit">In Transit</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="diverted">Diverted</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Produce Batches Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredBatches.map((batch) => {
-                    const isAmbient = batch.storage_condition === "ambient_heap";
-                    const isCold = batch.storage_condition === "cold_storage";
-
-                    return (
-                      <div
-                        key={batch.id}
-                        className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm hover:border-white/[0.15] transition-all flex flex-col justify-between"
-                      >
-                        <div>
-                          {/* Top row */}
-                          <div className="flex items-center justify-between gap-2 mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-base font-semibold text-white">
-                                {batch.crop_type}
-                              </span>
-                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#30D158]/10 border border-[#30D158]/20 text-[#30D158] tabular-nums">
-                                {batch.quantity_kg.toLocaleString()} kg
-                              </span>
-                            </div>
-                            <span
-                              className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium uppercase tracking-wider ${batch.status === "harvested"
-                                  ? "bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20"
-                                  : batch.status === "in_storage"
-                                    ? "bg-white/[0.08] text-neutral-300 border border-white/[0.1]"
-                                    : "bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20"
-                                }`}
-                            >
-                              {batch.status.replace("_", " ")}
-                            </span>
-                          </div>
-
-                          {/* Farmer info */}
-                          <div className="text-xs text-neutral-400 font-sans space-y-1 mb-4">
-                            <div className="flex items-center justify-between">
-                              <span className="text-neutral-500">Producer:</span>
-                              <span className="font-medium text-neutral-200">
-                                {batch.farmers?.name || "Smallholder Producer"}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-neutral-500">Cluster Location:</span>
-                              <span className="text-neutral-300">{batch.farmers?.location || "Regional Cluster"}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-neutral-500">Storage Environment:</span>
-                              <span
-                                className={`font-medium ${isAmbient
-                                    ? "text-[#FF453A]"
-                                    : isCold
-                                      ? "text-[#30D158]"
-                                      : "text-[#FF9F0A]"
-                                  }`}
-                              >
-                                {batch.storage_condition.replace("_", " ")}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-neutral-500">Basal Decay Rate:</span>
-                              <span className="text-neutral-300 tabular-nums">+{batch.basal_degradation_score} pts/day</span>
-                            </div>
-                          </div>
-
-                          {/* Shelf life progress gauge */}
-                          <div className="pt-2 border-t border-white/[0.06]">
-                            <ShelfLifeBadge
-                              remainingDays={batch.remaining_shelf_life_days}
-                              initialDays={batch.initial_shelf_life_days}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Bottom actions */}
-                        <div className="pt-4 mt-4 border-t border-white/[0.06] flex items-center justify-between">
-                          <span className="text-[10px] text-neutral-500 tabular-nums">
-                            Harvest: {batch.harvest_date}
-                          </span>
-                          <button
-                            onClick={() => setSelectedBatchForEdit(batch)}
-                            className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-200 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                            <span>Update Status</span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* TAB 3: BUYER DEMAND MATRIX */}
-            {activeTab === "buyers" && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-[#141416] border border-white/[0.08] text-xs text-neutral-300 flex items-start gap-2.5">
-                  <Warehouse className="w-4 h-4 text-[#30D158] mt-0.5 shrink-0" />
-                  <div>
-                    <span className="font-semibold text-white">
-                      Dual-Tier Arbitrage Demand Architecture:
-                    </span>{" "}
-                    Primary retail buyers require premium cosmetics and &gt;24h shelf life at full market value (e.g., ₹42/kg). Secondary processors (puree, paste, juice) absorb thermally stressed goods at salvage rates (e.g., ₹26.50/kg) with lower quality thresholds down to 8h.
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {buyers.map((b) => {
-                    const isPrimary = b.type === "primary_retail";
-                    return (
-                      <div
-                        key={b.id}
-                        className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm hover:border-white/[0.15] transition-all"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <h3 className="font-semibold text-sm text-white">
-                              {b.name}
-                            </h3>
-                            <p className="text-xs text-neutral-400 mt-0.5">
-                              {b.location}
-                            </p>
-                          </div>
-                          <span
-                            className={`text-[10px] font-medium px-2.5 py-0.5 rounded-full uppercase tracking-wider ${isPrimary
-                                ? "bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20"
-                                : "bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20"
-                              }`}
-                          >
-                            {isPrimary ? "Primary Retail" : "Secondary Processor"}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 py-3 border-y border-white/[0.06] text-xs">
-                          <div>
-                            <div className="text-neutral-500 text-[11px]">Crop Demand</div>
-                            <div className="font-medium text-neutral-200 mt-0.5">
-                              {b.demand_crop}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-neutral-500 text-[11px]">Volume (kg)</div>
-                            <div className="font-semibold text-neutral-200 mt-0.5 tabular-nums">
-                              {b.demand_kg.toLocaleString()}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-neutral-500 text-[11px]">Offered Price</div>
-                            <div className="font-semibold text-[#30D158] mt-0.5 tabular-nums">
-                              ₹{b.offered_price_per_kg}/kg
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 flex items-center justify-between text-xs text-neutral-400">
-                          <span>Min Arrival Shelf Life:</span>
-                          <span className="font-medium text-neutral-200 tabular-nums">
-                            ≥ {b.quality_threshold_min_shelf_life_hours} hours
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* TAB 4: COLD STORAGE CAPACITY */}
-            {activeTab === "storage" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {storages.map((s) => {
-                    const utilPct = Math.round(
-                      (s.current_utilization_kg / s.total_capacity_kg) * 100
-                    );
-                    const available =
-                      s.total_capacity_kg - s.current_utilization_kg;
-                    return (
-                      <div
-                        key={s.id}
-                        className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm space-y-4"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-semibold text-sm text-white">
-                              {s.name}
-                            </h3>
-                            <p className="text-xs text-neutral-400 mt-0.5">
-                              {s.location}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xs font-medium text-[#30D158] bg-[#30D158]/10 border border-[#30D158]/20 px-2 py-0.5 rounded-full tabular-nums">
-                              {utilPct}% Utilized
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Capacity Track */}
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-neutral-400 tabular-nums">
-                              {s.current_utilization_kg.toLocaleString()} kg used
-                            </span>
-                            <span className="font-medium text-[#30D158] tabular-nums">
-                              {available.toLocaleString()} kg free
-                            </span>
-                          </div>
-                          <div className="w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
-                            <div
-                              className="h-full bg-[#30D158] rounded-full transition-all duration-300"
-                              style={{ width: `${utilPct}%` }}
-                            />
-                          </div>
-                          <div className="text-right text-[10px] text-neutral-500 tabular-nums">
-                            Total Capacity: {s.total_capacity_kg.toLocaleString()} kg
-                          </div>
-                        </div>
-
-                        {/* Telemetry metrics */}
-                        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/[0.06] text-xs">
-                          <div className="p-2.5 rounded-xl bg-[#18181A] border border-white/[0.06] text-center">
-                            <div className="text-neutral-500 text-[10px]">Temperature</div>
-                            <div className="font-semibold text-[#30D158] mt-0.5 tabular-nums">
-                              {s.temperature_celsius}°C
-                            </div>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-[#18181A] border border-white/[0.06] text-center">
-                            <div className="text-neutral-500 text-[10px]">Humidity</div>
-                            <div className="font-semibold text-neutral-200 mt-0.5 tabular-nums">
-                              {s.humidity_pct}%
-                            </div>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-[#18181A] border border-white/[0.06] text-center">
-                            <div className="text-neutral-500 text-[10px]">Holding Tariff</div>
-                            <div className="font-medium text-neutral-200 mt-0.5">
-                              ₹{s.cost_per_kg_per_day}/kg/d
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* TAB 5: VEHICLE FLEET & TELEMETRY */}
-            {activeTab === "vehicles" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {vehicles.map((v) => {
-                    const isCold = v.is_refrigerated;
-                    return (
-                      <div
-                        key={v.id}
-                        className="p-5 rounded-2xl bg-[#141416] border border-white/[0.08] shadow-sm space-y-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Truck className="w-4 h-4 text-[#30D158]" />
-                            <span className="font-semibold text-sm text-white">
-                              {v.vehicle_number}
-                            </span>
-                          </div>
-                          <span
-                            className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium uppercase tracking-wider ${v.status === "in_transit"
-                                ? "bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20"
-                                : "bg-white/[0.08] text-neutral-300 border border-white/[0.1]"
-                              }`}
-                          >
-                            {v.status.replace("_", " ")}
-                          </span>
-                        </div>
-
-                        <div className="text-xs space-y-1.5 text-neutral-400 font-sans">
-                          <div className="flex justify-between">
-                            <span className="text-neutral-500">Driver:</span>
-                            <span className="font-medium text-neutral-200">
-                              {v.driver_name}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-neutral-500">Max Payload:</span>
-                            <span className="tabular-nums font-medium text-neutral-200">{v.max_payload_kg.toLocaleString()} kg</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-neutral-500">Cooling System:</span>
-                            <span
-                              className={`font-medium ${isCold
-                                  ? "text-[#30D158]"
-                                  : "text-[#FF9F0A]"
-                                }`}
-                            >
-                              {isCold
-                                ? "Active Refrigeration"
-                                : "Ambient Ventilation"}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Telemetry pill */}
-                        <div className="p-3 rounded-xl bg-[#18181A] border border-white/[0.06] flex items-center justify-between text-xs text-neutral-300">
-                          <div className="flex items-center gap-1.5">
-                            <Thermometer className="w-3.5 h-3.5 text-[#FF9F0A]" />
-                            <span className="tabular-nums">Temp: {v.current_temp_celsius}°C</span>
-                          </div>
-                          <span className="text-neutral-600">|</span>
-                          <span className="tabular-nums">RH: {v.current_humidity_pct}%</span>
-                          <span className="text-neutral-600">|</span>
-                          <span className="tabular-nums">₹{v.cost_per_km}/km</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+        </div>
       </main>
 
-      {/* Modals */}
-      <CreateBatchModal
-        isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onSuccess={fetchAllData}
-        backendUrl={backendUrl}
-      />
-
-      <UpdateBatchModal
-        batch={selectedBatchForEdit}
-        isOpen={selectedBatchForEdit !== null}
-        onClose={() => setSelectedBatchForEdit(null)}
-        onSuccess={fetchAllData}
-        backendUrl={backendUrl}
-      />
-
       {/* Footer */}
-      <footer className="mt-16 border-t border-white/[0.08] py-8 text-center text-xs text-neutral-500 font-sans">
-        <p className="text-neutral-400">HARVEST ZERO © 2026. Post-Harvest Loss Prevention and Cold-Chain Logistics</p>
-        <p className="mt-1 text-[11px] text-neutral-500">
-          Decision support platform connecting farmers, cold storage facilities, transport fleets, and commercial buyers.
-        </p>
+      <footer className="border-t border-slate-200 bg-white py-3 px-6 text-center text-xs text-slate-400">
+        HARVEST ZERO · BYTEATHON 2026
       </footer>
     </div>
   );

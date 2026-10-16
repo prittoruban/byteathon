@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fira_Code, Fira_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -16,11 +16,20 @@ const firaCode = Fira_Code({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#ffffff",
+};
+
 export const metadata: Metadata = {
   title: "HARVEST ZERO: Post-Harvest Loss Prevention Platform",
   description:
     "Decision-support platform connecting farmers, storage facilities, transport operators, and buyers to eliminate agricultural waste and optimize perishables distribution.",
 };
+
+import { LanguageProvider } from "@/lib/i18n";
 
 export default function RootLayout({
   children,
@@ -29,7 +38,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${firaSans.variable} ${firaCode.variable} h-full antialiased bg-[#FBFBFD] text-[#1D1D1F]`}>
-      <body className="min-h-full flex flex-col bg-[#FBFBFD] text-[#1D1D1F]">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#FBFBFD] text-[#1D1D1F]">
+        <LanguageProvider>{children}</LanguageProvider>
+      </body>
     </html>
   );
 }

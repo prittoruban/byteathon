@@ -197,11 +197,33 @@ async def create_farmer(payload: FarmerCreate):
 # ====================================================================
 # 2. PRODUCE BATCHES API
 # ====================================================================
+from backend.app.store import store
+
 @app.get("/api/produce-batches", tags=["Produce Batches"])
 async def get_produce_batches(limit: int = 50):
     client = get_supabase_client()
-    res = client.table("produce_batches").select("*, farmers(name, location)").limit(limit).execute()
-    return res.data
+    db_batches = []
+    try:
+        res = client.table("produce_batches").select("*, farmers(name, location)").limit(limit).execute()
+        db_batches = res.data or []
+    except Exception:
+        pass
+
+    # Prepend real-time in-memory batches so newest always appears first
+    memory_batches = store.list_produce_batches()
+    seen_ids = set()
+    combined = []
+    for b in memory_batches:
+        b_id = str(b.get("id"))
+        if b_id not in seen_ids:
+            seen_ids.add(b_id)
+            combined.append(b)
+    for b in db_batches:
+        b_id = str(b.get("id"))
+        if b_id not in seen_ids:
+            seen_ids.add(b_id)
+            combined.append(b)
+    return combined[:limit]
 
 
 @app.post(
@@ -1096,4 +1118,23 @@ async def simulate_spike_and_resolve_workflow(payload: Dict[str, Any]):
         "secondary_arbitrage": arbitrage_res.model_dump(),
         "persisted_to_database": persisted,
     }
+
+
+# -------------------------------------------------------------
+# Multi-Role Platform Rebuild Routers (BYTEATHON 2026 - Track BYTE01)
+# -------------------------------------------------------------
+from backend.app.routers.auth import router as auth_router
+from backend.app.routers.lot_intake import router as lot_intake_router
+from backend.app.routers.dispatch_plan import router as dispatch_plan_router
+from backend.app.routers.notifications import router as notifications_router
+from backend.app.routers.storage_vehicle_actions import router as storage_vehicle_router
+from backend.app.routers.freshness import router as freshness_router
+
+app.include_router(auth_router)
+app.include_router(lot_intake_router)
+app.include_router(dispatch_plan_router)
+app.include_router(notifications_router)
+app.include_router(storage_vehicle_router)
+app.include_router(freshness_router)
+
 

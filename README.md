@@ -17,7 +17,7 @@ In India alone, post-harvest fruit and vegetable losses range from **6.02% to 15
 
 ---
 
-## 2. Technology Stack
+## 2. Technology Stacka
 
 - **Frontend:** Next.js (App Router, React 19, TypeScript)
 - **Styling & Design System:** Tailwind CSS with CSS Variables adhering to `.agents/skills/ui-ux-pro-max/` (Organic Biophilic + Technical Precision)

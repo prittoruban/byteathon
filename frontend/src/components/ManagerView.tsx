@@ -130,6 +130,8 @@ interface ManagerViewProps {
   onRefresh: () => void;
   loading: boolean;
   onSwitchToFarmer: () => void;
+  lastAddedBatchId?: string | null;
+  currentFarmerName?: string | null;
 }
 
 export function ManagerView({
@@ -145,12 +147,21 @@ export function ManagerView({
   onRefresh,
   loading,
   onSwitchToFarmer,
+  lastAddedBatchId,
+  currentFarmerName,
 }: ManagerViewProps) {
   const [managerTab, setManagerTab] = useState<"allocations" | "inventory" | "fleet">("allocations");
   const [cropFilter, setCropFilter] = useState<string>("all");
 
   const filteredBatches = batches.filter((b) => {
     return cropFilter === "all" || b.crop_type.toLowerCase() === cropFilter.toLowerCase();
+  });
+
+  // Prioritize showing newly added batch at the top of the batches list
+  const sortedBatches = [...filteredBatches].sort((a, b) => {
+    if (a.id === lastAddedBatchId) return -1;
+    if (b.id === lastAddedBatchId) return 1;
+    return 0;
   });
 
   const criticalBatches = batches.filter((b) => b.remaining_shelf_life_days <= 3.0);
@@ -290,6 +301,33 @@ export function ManagerView({
         </div>
       </div>
 
+      {/* Dynamic Alert Banner when a new farmer batch was just added */}
+      {lastAddedBatchId && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#F4FBF7] via-white to-[#F4FBF7] border-2 border-[#107C41] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#E8F5E9] border border-[#C8E6C9] flex items-center justify-center text-xl shrink-0">
+              ⚡
+            </div>
+            <div>
+              <div className="text-sm font-extrabold text-[#107C41]">
+                New Farmer Produce Batch Recorded in Inventory!
+              </div>
+              <p className="text-xs text-[#4B5563]">
+                {currentFarmerName ? `Registered by ${currentFarmerName}.` : "Registered via PM-KISAN portal."} Re-run optimization below to compute optimal buyer routing and assign transport.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onRunOptimization}
+            disabled={optimizing}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-[#107C41] hover:bg-[#0D6535] text-white transition-all cursor-pointer shadow-xs shrink-0 active:scale-95"
+          >
+            <Zap className={`w-4 h-4 ${optimizing ? "animate-spin text-amber-300" : ""}`} />
+            <span>{optimizing ? "Optimizing Routes..." : "Re-Run Optimization"}</span>
+          </button>
+        </div>
+      )}
+
       {/* 3. ACTIVE TAB CONTENT */}
 
       {/* TAB A: RECOMMENDED DISPATCHES & CASH (Allocations) */}
@@ -312,6 +350,7 @@ export function ManagerView({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {distributionPlan?.recommendations.map((rec) => {
               const isPrimary = rec.buyer_type === "primary_retail";
+              const isNewBatchAllocation = rec.batch_id === lastAddedBatchId;
               const unitPrice =
                 rec.offered_price_per_kg ??
                 (rec.allocated_quantity_kg > 0
@@ -324,7 +363,11 @@ export function ManagerView({
               return (
                 <div
                   key={rec.allocation_id}
-                  className="p-5 rounded-3xl bg-white border border-neutral-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-3.5 hover:border-neutral-300 transition-all"
+                  className={`p-5 rounded-3xl bg-white border shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-3.5 transition-all ${
+                    isNewBatchAllocation
+                      ? "border-2 border-[#107C41] ring-2 ring-[#C8E6C9] bg-[#F4FBF7]"
+                      : "border-neutral-200/80 hover:border-neutral-300"
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
@@ -336,15 +379,22 @@ export function ManagerView({
                       </span>
                     </div>
 
-                    <span
-                      className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
-                        isPrimary
-                          ? "bg-[#E8F5E9] text-[#107C41] border-[#C8E6C9]"
-                          : "bg-[#FFF4E5] text-[#B76E00] border-[#FFE0B2]"
-                      }`}
-                    >
-                      {isPrimary ? "Primary Retail" : "Secondary Processor"}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {isNewBatchAllocation && (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#107C41] text-white shadow-xs animate-pulse">
+                          ⚡ Just Allocated
+                        </span>
+                      )}
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                          isPrimary
+                            ? "bg-[#E8F5E9] text-[#107C41] border-[#C8E6C9]"
+                            : "bg-[#FFF4E5] text-[#B76E00] border-[#FFE0B2]"
+                        }`}
+                      >
+                        {isPrimary ? "Primary Retail" : "Secondary Processor"}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Route description */}
@@ -431,20 +481,34 @@ export function ManagerView({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredBatches.map((b) => (
-              <div
-                key={b.id}
-                className="p-5 rounded-3xl bg-white border border-neutral-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-3 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-base font-extrabold text-[#1D1D1F]">
-                      {b.crop_type}
-                    </span>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#107C41] border border-[#C8E6C9] tabular-nums">
-                      {b.quantity_kg.toLocaleString()} kg
-                    </span>
-                  </div>
+            {sortedBatches.map((b) => {
+              const isJustAdded = b.id === lastAddedBatchId;
+
+              return (
+                <div
+                  key={b.id}
+                  className={`p-5 rounded-3xl bg-white border shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-3 flex flex-col justify-between transition-all ${
+                    isJustAdded
+                      ? "border-2 border-[#107C41] ring-2 ring-[#C8E6C9] bg-[#F4FBF7]"
+                      : "border-neutral-200/80"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base font-extrabold text-[#1D1D1F]">
+                          {b.crop_type}
+                        </span>
+                        {isJustAdded && (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#107C41] text-white shadow-xs animate-pulse">
+                            ⚡ Just Added
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#107C41] border border-[#C8E6C9] tabular-nums">
+                        {b.quantity_kg.toLocaleString()} kg
+                      </span>
+                    </div>
 
                   <div className="text-xs text-[#6E6E73] space-y-1 mb-3">
                     <div className="flex justify-between">
@@ -478,7 +542,8 @@ export function ManagerView({
                   </button>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         </div>
       )}
